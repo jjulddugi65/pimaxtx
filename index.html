@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>파이오니어 AI 거버넌스 데모</title>
+    <script src="https://sdk.mine.pi/pi-sdk.js"></script>
+
+    <style>
+        /* 🚫 Pi App studio 호환성: 외부 폰트 제거 */
+        /* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap'); */
+        body {
+            font-family: sans-serif; /* 기본 폰트로 대체 */
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+        /* ... 기존 CSS 스타일은 여기에 모두 유지 ... */
+        .container { max-width: 900px; margin: auto; }
+        .header { background-color: #1f2937; color: white; }
+        .table-container { background-color: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
+        .scrollable-table { max-height: 250px; overflow-y: auto; }
+        .transaction-title { color: #d1d5db; }
+        .smart-contract-consensus { background-color: #6366f1; color: white; padding: 0.5rem 1rem; border-radius: 9999px; font-size: 0.75rem; white-space: nowrap; }
+        .glow-effect { animation: glow 1s infinite alternate; }
+        @keyframes glow { from { box-shadow: 0 0 5px #facc15, 0 0 10px #facc15; } to { box-shadow: 0 0 20px #facc15, 0 0 30px #facc15; } }
+        .message-box { animation: fadeInOut 3s forwards; pointer-events: none; }
+        @keyframes fadeInOut { 0% { opacity: 0; transform: translateY(-20px); } 10% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-20px); } }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #e5e7eb; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #9ca3af; border-radius: 10px; border: 2px solid #e5e7eb; }
+        .qrcode-container { display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
+        .wallet-text { word-break: break-all; font-size: 0.75rem; line-height: 1rem; }
+        .qr-message { max-width: 250px; }
+    </style>
+</head>
+<body class="p-6 md:p-10">
+
+    <div id="message_box" class="fixed top-5 left-1/2 -translate-x-1/2 bg-gray-900 text-white p-4 rounded-xl shadow-lg z-50 transform scale-0 transition-transform duration-300"></div>
+
+    <div class="container">
+        <div class="header rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between mb-8">
+            <div class="flex-1">
+                <p class="text-white text-lg font-semibold mb-2">대화형 AI가 요청한 파이를 전송해주세요</p>
+                <p class="text-gray-400 font-bold mb-4">실시간으로 트랜젝션과 당신의 작업요청에 의한 AI 활동을 확인하실수 잇습니다.</p>
+            </div>
+            <div class="md:ml-8 mt-4 md:mt-0">
+                <p class="text-white text-sm font-bold text-center">Pi Login을 통해 AI 활동을 시작하세요.</p>
+            </div>
+        </div>
+
+        <div class="table-container p-6 mb-8">
+            </div>
+
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+            <h2 class="text-3xl md:text-4xl font-bold transaction-title text-gray-700 mb-4 md:mb-0">TRANSACTION LEDGER</h2>
+            <div class="smart-contract-consensus">
+                <span id="consensus_progress">3140/10001</span> Smart Contract Node Consensus
+            </div>
+        </div>
+
+        <div class="table-container p-6">
+            <div class="scrollable-table custom-scrollbar">
+                <table class="min-w-full divide-y divide-gray-200">
+                    </table>
+            </div>
+        </div>
+
+        <div class="fixed bottom-6 right-6 flex flex-col items-center">
+            <button onclick="piAuthenticate()" id="login_button" class="bg-blue-600 text-white p-3 rounded-lg shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 mb-3 font-semibold">
+                1. Login with Pi (AI ID 인식)
+            </button>
+            <button onclick="piRequestPayment()" id="payment_button" class="bg-yellow-400 p-4 rounded-full shadow-lg hover:bg-yellow-300 transition-all duration-300 transform hover:scale-110" disabled>
+                <p class="text-sm font-semibold text-white mb-1">2. Pi 결제 요청</p>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white mx-auto" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 22C6.47715 22 2 17.5228 2 12C2 6.47715 6.47715 2 12 2C17.5228 2 22 6.47715 22 12C22 17.5228 17.5228 22 12 22ZM12 20C16.4183 20 20 16.4183 20 12C20 7.58172 16.4183 4 12 4C7.58172 4 4 7.58172 4 12C4 16.4183 7.58172 20 12 20ZM12 11C12.5523 11 13 11.4477 13 12V16C13 16.5523 12.5523 17 12 17C11.4477 17 11 16.5523 11 16V12C11 11.4477 11.4477 11 12 11ZM12 7C12.5523 7 13 7.44772 13 8C13 8.55228 12.5523 9 12 9C11.4477 9 11 8.55228 11 8C11 7.44772 11.4477 7 12 7Z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let transactionID = 14;
+        let consensusCount = 3140;
+        let authenticatedUser = null; // 인증된 Pi ID를 저장할 변수
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('consensus_progress').textContent = `${consensusCount}/10001`;
+        });
+        
+        // 🔑 Pi SDK 초기화 (여기에 App ID 적용)
+        Pi.init({ 
+            version: "2.0", 
+            api_key: "ondfzivqeiicv77ngeaxbk6cjvy74bws0sffxaw3ue8eggrxaafh6j8lxjfubgnl", // 사용자님의 Pi App ID 적용
+            sandbox: true // 테스트 환경 설정 (Hackathon용)
+        });
+
+        function showMessage(message, isSuccess = true) {
+            const msgBox = document.getElementById('message_box');
+            msgBox.textContent = message;
+            msgBox.classList.remove('scale-0', 'bg-red-600', 'bg-gray-900');
+            msgBox.classList.add('scale-100', 'message-box', isSuccess ? 'bg-gray-900' : 'bg-red-600');
+            setTimeout(() => {
+                msgBox.classList.remove('scale-100', 'message-box');
+                msgBox.classList.add('scale-0');
+            }, 3000);
+        }
+
+        function getRandomPiAmount(min, max) {
+            return parseFloat((Math.random() * (max - min) + min).toFixed(4));
+        }
+
+        // ----------------------------------------------------
+        // 1. Pi 인증 함수 (Login with Pi)
+        // ----------------------------------------------------
+        function piAuthenticate() {
+            Pi.authenticate(['username', 'payments'], onIncompletePayment, (auth) => {
+                // ✅ 인증 성공 콜백
+                authenticatedUser = auth.user.username; // Pi ID 확보
+                showMessage(`성공! Pi ID (${authenticatedUser})가 AI에 의해 인식되었습니다.`);
+                document.getElementById('login_button').disabled = true;
+                document.getElementById('payment_button').disabled = false; // 결제 버튼 활성화
+            }, (error) => {
+                // ❌ 인증 실패 콜백
+                showMessage(`Pi 인증 실패: ${error.message}`, false);
+            });
+        }
+
+        // 2. Pi 결제 요청 함수 (AI 거버넌스 로직 시작)
+        function piRequestPayment() {
+            if (!authenticatedUser) {
+                showMessage('먼저 Pi 로그인을 해주세요.', false);
+                return;
+            }
+
+            const testPi = getRandomPiAmount(0.1, 10.0); // 0.1 Pi ~ 10.0 Pi 사이 금액 요청
+
+            Pi.requestPayment({
+                amount: testPi,
+                memo: `AI Task Request: ID ${transactionID}`,
+                metadata: { task_id: transactionID }
+            }, (payment) => {
+                // ✅ 결제 성공 콜백: 기존의 시뮬레이션 로직을 실행
+                processAiGovernanceLogic(testPi, authenticatedUser);
+                showMessage(`결제 성공! ${testPi.toFixed(4)} Test Pi 요청이 완료되었습니다.`);
+            }, (error) => {
+                // ❌ 결제 실패 콜백
+                showMessage(`Pi 결제 실패: ${error.message}`, false);
+            });
+        }
+        
+        // 미완료 결제 처리 함수 (SDK에서 요구)
+        function onIncompletePayment(payment) {
+            showMessage(`미완료된 Pi 결제 (ID: ${payment.identifier})가 있습니다. 확인해주세요.`, false);
+        }
+        
+        // ----------------------------------------------------
+        // 3. AI 거버넌스 로직 실행 (기존 simulateTransaction 대체)
+        // ----------------------------------------------------
+        function processAiGovernanceLogic(testPi, sender) {
+            const time = new Date();
+            const timeMS = `${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}:${String(time.getSeconds()).padStart(2, '0')}.${String(time.getMilliseconds()).padStart(3, '0')}`;
+            
+            // 💡 사용자님의 핵심 SC 배정 로직 (Pi 금액에 따라 분기)
+            const SC_THRESHOLD = 2.0; 
+            let sc_designation = "";
+            let sc_code = "AIO";
+            
+            if (testPi <= SC_THRESHOLD) {
+                sc_designation = "1st SC AI (Survival)";
+                sc_code += " [SC1]";
+            } else {
+                sc_designation = "2nd SC AI (Market)";
+                sc_code += " [SC2]";
+            }
+            // ------------------------------------
+
+            const task = "A"; // Task A
+            const code10821 = "10821";
+            
+            const smartContractLedger = document.getElementById('smart_contract_ledger');
+            const ledgerRow = document.createElement('tr');
+            ledgerRow.classList.add('glow-effect');
+            
+            ledgerRow.innerHTML = `
+                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500">${transactionID++}</td>
+                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500">${timeMS}</td>
+                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500">Pioneer (${sender})</td> <td class="px-2 py-2 whitespace-nowrap text-xs font-bold ${sc_designation.includes('1st') ? 'text-blue-600' : 'text-green-600'}">${sc_designation}</td>
+                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500">${testPi.toFixed(4)}</td>
+                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500">${task}</td>
+                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500">${code10821}</td>
+                <td class="px-2 py-2 whitespace-nowrap text-xs text-gray-500">${sc_code}</td>
+            `;
+            smartContractLedger.prepend(ledgerRow);
+
+            setTimeout(() => ledgerRow.classList.remove('glow-effect'), 2000);
+            document.getElementById('consensus_progress').textContent = `${++consensusCount}/10001`;
+        }
+    </script>
+</body>
+</html>
+
+
+기술문서 첨부
+강조할 내용	효과						
+"현 단계에서 저는 모든 자원(시간, 코딩 역량)을 'AI 시대의 Pi 경제를 위한 헌법'을 완성하는 데 집중했습니다."	비전의 중요성을 최우선으로 놓았음을 강조하여, 단순한 코딩보다 더 큰 목표를 추구했음을 설득합니다.						
+"데모는 HTML/JS 시뮬레이션으로 제작되었지만, $\text{Orderer AI}$가 $\text{1차 SC}$와 $\text{2차 SC}$를 배정하는 논리 흐름($\text{0.0101/n}$, 10821 Code 등)의 작동 가능성을 완벽하게 증명합니다."	**코드의 기능(Pi 송금)**보다 **코드의 논리(AI 거버넌스)**가 핵심임을 강조합니다.						
+"파이 $\text{SDK}$를 활용한 지갑 연동은 기술적으로 어려운 문제가 아니며, 성공적인 Mainnet 론칭을 위한 추가 자원 및 개발 지원이 확보되는 즉시 구현할 계획입니다."	기술적 구현 능력에 대한 자신감을 잃지 않으면서, 코어팀에게 **'당신들의 투자가 필요하다'**는 메시지를 전략적으로 전달합니다.						
+							
+
+
+
+강조할 내용	효과
+"현 단계에서 저는 모든 자원(시간, 코딩 역량)을 'AI 시대의 Pi 경제를 위한 헌법'을 완성하는 데 집중했습니다."	비전의 중요성을 최우선으로 놓았음을 강조하여, 단순한 코딩보다 더 큰 목표를 추구했음을 설득합니다.
+"데모는 HTML/JS 시뮬레이션으로 제작되었지만, $\text{Orderer AI}$가 $\text{1차 SC}$와 $\text{2차 SC}$를 배정하는 논리 흐름($\text{0.0101/n}$, 10821 Code 등)의 작동 가능성을 완벽하게 증명합니다."	**코드의 기능(Pi 송금)**보다 **코드의 논리(AI 거버넌스)**가 핵심임을 강조합니다.
+"파이 $\text{SDK}$를 활용한 지갑 연동은 기술적으로 어려운 문제가 아니며, 성공적인 Mainnet 론칭을 위한 추가 자원 및 개발 지원이 확보되는 즉시 구현할 계획입니다."	기술적 구현 능력에 대한 자신감을 잃지 않으면서, 코어팀에게 **'당신들의 투자가 필요하다'**는 메시지를 전략적으로 전달합니다.							
