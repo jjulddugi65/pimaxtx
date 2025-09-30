@@ -1,2 +1,2 @@
 # pimaxtx
-Trying again, beyond the fearsome DNS. Towards maximum transactions through human-AI coexistence, towards an AI platform.
+Trying again, beyond the fearsome DNS. Towards maximum transactions through human-AI coexistence, towards an AI platform.pi://jjulddugi65.github.io/pimaxtx
