@@ -1,60 +1,547 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pi Client ID Test</title>
-    <script src="https://sdk.minepi.com/pi-sdk-client.js"></script>
+    <title>FOR Pi MAXIMUM TRANSACTION Demo (SDK Mocked)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; padding-top: 50px; }
-        .test-button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
-        .message { margin-top: 20px; font-weight: bold; }
+        /* CSS Styles */
+        body {
+            font-family: sans-serif;
+            background-color: #f3f4f6;
+            color: #1f2937;
+            padding: 2rem 1rem;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+        .header {
+            background-color: #1f2937;
+            color: white;
+            padding: 2rem;
+            border-radius: 1rem;
+        }
+        .simulator-section {
+            background: white;
+            padding: 2rem;
+            margin: 2rem 0 0 0;
+            border-radius: 1rem 1rem 0 0;
+            box-shadow: 0 2px 15px -5px rgba(0, 0, 0, 0.1);
+        }
+        /* --- [수정] 인플레이션 차트 높이 120px로 조정 (데이터 표시를 위해) --- */
+        .inflation-chart {
+            height: 120px; /* 60px에서 120px로 높이 조정 */
+            background: white;
+            padding: 1rem;
+            margin: 2rem 0;
+            border-radius: 1rem;
+            box-shadow: 0 2px 15px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden; 
+        }
+        /* Real-time Block Explorer iframe style */
+        #block_explorer_iframe {
+            width: 100%;
+            height: 150px;
+            border: 2px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 1rem 1rem;
+            display: block;
+            margin-bottom: 2rem;
+        }
+        /* SCP Consensus Animation Style */
+        .scp-consensus {
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            background: #4f46e5;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.5rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            margin-left: 1rem;
+        }
+        /* Ledger header container for flex */
+        .ledger-header-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        /* Download button style */
+        .download-button {
+            background-color: #10b981;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            margin-left: auto;
+            transition: background-color 0.2s;
+        }
+        .download-button:hover {
+            background-color: #059669;
+        }
+        /* Login and Payment Button Styles */
+        .pi-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        .login-button {
+            background-color: #f7a43b; /* Pi Yellow */
+            color: white;
+        }
+        .login-button:hover {
+            background-color: #e09133;
+        }
+        .payment-button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+        }
+        .payment-button:hover {
+            background-color: #45A049;
+        }
+        /* Input and Select styling for better visibility */
+        input[type="number"], select {
+            width: 100%;
+            padding: 0.5rem;
+            margin-top: 0.25rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+        }
+        /* Style for Public Key cell to ensure readability (글꼴 크기 축소 반영) */
+        .pk-cell {
+            font-family: monospace;
+            font-size: 0.65rem;
+        }
+        .grid {
+            display: grid;
+        }
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .gap-4 {
+            gap: 1rem;
+        }
+        /* --- [추가] NFT 버튼 스타일 --- */
+        .nft-button {
+            background-color: #9c27b0; /* 보라색 계열 (NFT/크리에이터 테마) */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            transition: background-color 0.2s;
+            margin-top: 2rem; /* 장부와 분리 */
+        }
+        .nft-button:hover {
+            background-color: #7b1fa2;
+        }
     </style>
 </head>
 <body>
-
-    <h1>Client ID 유효성 테스트</h1>
-    <p>아래 버튼을 누르고 Pi 인증 창이 뜨는지 확인하세요.</p>
-    
-    <button id="test_button" class="test-button" onclick="testClient()">Pi Login TEST</button>
-
-    <div id="status_message" class="message">클릭 대기 중...</div>
-
+    <div id="message_box" style="z-index: 1000; position: fixed; top: 1rem; left: 50%; transform: translateX(-50%) scale(0); transition: transform 0.3s; padding: 0.75rem 1.5rem; border-radius: 0.5rem; color: white; background-color: #1f2937;">
+        App Status: Ready
+    </div>
+    <div class="container">
+        <div class="header rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between mb-8">
+            <div class="flex-1">
+                <p class="text-white text-lg font-semibold mb-2">FOR Pi MAXIMUM TRANSACTION</p>
+                <p class="text-gray-400 font-bold mb-4">Monitor real-time transactions and delegated AI activities based on your inputs.</p>
+            </div>
+            <div class="md:ml-8 mt-4 md:mt-0">
+                <p class="text-white text-sm font-bold text-center">Run simulation via the buttons below.</p>
+            </div>
+        </div>
+        <div class="simulator-section">
+            <h2 class="text-2xl font-bold mb-4">Transaction Delegation Simulation (SDK MOCKED)</h2>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <button id="login_button" class="pi-button login-button" onclick="piAuthenticate()">
+                    1. Pi Login (Identify User - MOCKED)
+                </button>
+                <button id="payment_button" class="pi-button payment-button" onclick="piRequestPayment()" disabled>
+                    2. Request Pi Payment (Start SC - MOCKED)
+                </button>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label htmlFor="piAmount">Pi Amount (for SC Selection):</label>
+                    <input type="number" id="piAmount" step="0.0001" value="0.0101" placeholder="e.g. 2.5">
+                </div>
+                <div>
+                    <label htmlFor="taskType">Task Type:</label>
+                    <select id="taskType">
+                        <option value="Drawing">창작: 그림 (Drawing)</option>
+                        <option value="Animation">창작: 애니메이션 (Animation)</option>
+                        <option value="VideoEdit">창작: 동영상 편집 (Video Edit)</option>
+                        <option value="Research">데이터: 리서치/분석 (Research/Analysis)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <iframe id="block_explorer_iframe"
+                src="https://blockexplorer.minepi.com/testnet/"
+                title="Pi Testnet Block Explorer"
+                frameborder="0"
+                allow="autoplay; encrypted-media"></iframe>
+        <div id="inflation_chart" class="inflation-chart">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-bold text-gray-700">Pi Economy Inflation Index (Simulated)</h3>
+                <span id="public_tax_display" class="text-sm font-bold text-green-600">Public Tax Pool: 0.0000 Pi</span>
+            </div>
+        </div>
+        <div class="table-container p-6 mb-8 relative bg-white rounded-xl shadow-lg">
+            <div class="ledger-header-container">
+                <h2 class="text-2xl font-bold text-gray-800">TRANSACTION LEDGER (Off-Chain/Logical)</h2>
+                <button class="download-button" onclick="downloadLedger()">Download CSV</button>
+                <div id="scp_consensus_status" class="scp-consensus" style="opacity: 0;">SCP Consensus: 0/10001 Nodes</div>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200" id="ledger_table">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-2 py-2 text-xs">ID</th>
+                        <th class="px-2 py-2 text-xs">Time</th>
+                        <th class="px-2 py-2 text-xs">Sender</th>
+                        <th class="px-2 py-2 text-xs">Smart Contract</th>
+                        <th class="px-2 py-2 text-xs">Pi Amount</th>
+                        <th class="px-2 py-2 text-xs">Task</th>
+                        <th class="px-2 py-2 text-xs">SC Code</th>
+                    </tr>
+                </thead>
+                <tbody id="smart_contract_ledger">
+                    </tbody>
+            </table>
+            <button class="nft-button" onclick="window.open('https://github.com/jjulddugi65/pibot/blob/main/index.html', '_blank')">
+                Go to Pi NFT Marketplace (Concept) 🚀
+            </button>
+        </div>
+    </div>
     <script>
-        // 🌟 테스트할 Client ID 후보 🌟
-        const PI_CLIENT_ID = "for-pi-maximum-transaction-6515af3b41ac3582"; 
-        const REDIRECT_URI = "https://jjulddugi65.github.io/pimaxtx/";
+        // === Core Variables ===
+        let transactionID = 18; 
+        const maxNodes = 10001;
+        let authenticatedUser = null;                   
+        const MOCK_PUBLIC_KEY_SHORT = 'GDUVQR...QO6';           
+        const KYC_ID = '10821';         
+        const mockUsername = KYC_ID + '_' + MOCK_PUBLIC_KEY_SHORT; 
 
-        // 1. Pi SDK 초기화 (Client ID 테스트)
-        Pi.init({
-            version: "2.0",
-            client_id: PI_CLIENT_ID, 
-            redirect_uri: REDIRECT_URI,
-            sandbox: true, 
+        // --- Public Tax (공공세) & Economy Variables ---
+        const PUBLIC_TAX_RATE = 0.02; // 2% Public Tax (0.02)
+        const FIXED_FEE = 0.01; // 고정 수수료 (0.01 Pi)
+        let publicTaxPool = 0.0; 
+        // ----------------------------------------------------
+        
+        // --- Utility Functions ---
+        function showMessage(message, isSuccess = true) {
+            const messageBox = document.getElementById('message_box');
+            if (!messageBox) return; 
+            messageBox.textContent = message;
+            messageBox.style.opacity = 1;
+            messageBox.style.transform = 'translateX(-50%) scale(1)';                        
             
-            onError: (error) => {
-                document.getElementById('status_message').textContent = `❌ Pi SDK 초기화 오류: ${error.message}`;
-                document.getElementById('status_message').style.color = 'red';
-            }
-        });
-
-        // 2. Pi 인증 테스트 함수
-        function testClient() {
-            document.getElementById('status_message').textContent = "인증 요청 중...";
-            document.getElementById('status_message').style.color = 'orange';
-
-            // 사용자 이름 권한만 요청하여 인증 창을 띄우는지 확인
-            Pi.authenticate(['username'])
-                .then(function(auth) {
-                    document.getElementById('status_message').textContent = `✅ 성공: Pi 인증 창이 떴고, 사용자 ${auth.user.username} 인증됨.`;
-                    document.getElementById('status_message').style.color = 'green';
-                    document.getElementById('test_button').disabled = true;
-                })
-                .catch(function(error) {
-                    document.getElementById('status_message').textContent = `❌ 실패 (인증 창 미표시 또는 오류): ${error.message}`;
-                    document.getElementById('status_message').style.color = 'red';
-                });
+            messageBox.classList.remove('bg-green-600', 'bg-red-600', 'bg-gray-800');
+            if (isSuccess) {
+                messageBox.style.backgroundColor = '#4CAF50'; 
+            } else {
+                messageBox.style.backgroundColor = '#F44336'; 
+            }                       
+            setTimeout(() => {
+                messageBox.style.transform = 'translateX(-50%) scale(0)';
+            }, 3000);
         }
+        
+        function updatePublicTaxDisplay() {
+            const taxElement = document.getElementById('public_tax_display');
+            if (taxElement) {
+                taxElement.textContent = `Public Tax Pool: ${publicTaxPool.toFixed(4)} Pi`;
+            }
+        }
+        
+        function startSCPAnimation(scType) {
+            const scpStatusElement = document.getElementById('scp_consensus_status');
+            if (!scpStatusElement) return;
+
+            scpStatusElement.style.opacity = 1;
+
+            const consensusSteps = [31, 314, 3141, maxNodes]; 
+            let stepIndex = 0;                        
+            showMessage(`AI selected ${scType}. Starting MOCKED SCP Consensus...`, true); 
+
+            const interval = setInterval(() => {
+                const currentCount = consensusSteps[stepIndex];
+                scpStatusElement.textContent = `SCP Consensus: ${currentCount}/${maxNodes} Nodes`;                            
+                stepIndex++;
+                if (stepIndex >= consensusSteps.length) {
+                    clearInterval(interval);
+                    scpStatusElement.textContent = `SCP Consensus: 10001/${maxNodes} Nodes (Finalized)`;
+                }
+            }, 500);          
+        }            
+        
+        // --- MOCKED Pi SDK Functions ---            
+        function piAuthenticate() {
+            authenticatedUser = mockUsername;
+            showMessage(`Pi ID: ${authenticatedUser} authenticated successfully (MOCKED).`, true);
+            document.getElementById('login_button').disabled = true;
+            document.getElementById('payment_button').disabled = false;
+        }
+
+        function piRequestPayment() {
+            if (!authenticatedUser) {
+                showMessage("Please log in with Pi first.", false);
+                return;
+            }
+
+            const amount = parseFloat(document.getElementById('piAmount').value);
+            const taskType = document.getElementById('taskType').value; 
+
+            if (isNaN(amount) || amount <= 0) { 
+                showMessage("Please enter a valid Pi Amount.", false); 
+                return;
+            }
+
+            const minRequiredAmount = 0.0101;                          
+            if (amount < minRequiredAmount) { 
+                showMessage(`Pi Amount must be greater than or equal to ${minRequiredAmount.toFixed(4)} Pi (0.0101/n logic).`, false);
+                return;
+            }
+
+            showMessage(`MOCKED Payment request ($${amount.toFixed(4)}$ Pi) sent. Starting SC execution...`, true);
+            runSimulation(taskType);          
+        }            
+
+        // --- Simulation & Core Logic (Called upon successful payment) ---         
+        function runSimulation(taskType) {
+            const piAmountInput = document.getElementById('piAmount').value;
+            const amount = parseFloat(piAmountInput);                       
+            
+            // --- 1. 경제 로직: 작업 비용 (W), 공공세 (P), 고정 수수료 (F) 역산 ---
+            const workCost = (amount - FIXED_FEE) / (1 + PUBLIC_TAX_RATE);                       
+            const publicTax = workCost * PUBLIC_TAX_RATE;                       
+            publicTaxPool += publicTax;
+            updatePublicTaxDisplay(); 
+            // ------------------------------------------------------------------
+
+            // 2. Smart Contract Selection (Work Cost 기준으로 1st/2nd SC 선택)            
+            let scType = workCost >= 2.0 ? '2nd SC (Market)' : '1st SC (Survival)';
+
+            startSCPAnimation(scType); 
+            const ledger = document.getElementById('smart_contract_ledger');                        
+            
+            // Main Transaction ID            
+            transactionID++;
+            const mainID = transactionID;                       
+            
+            const subAmountNet = (workCost / 2.0).toFixed(5);
+            const senderName = authenticatedUser ? authenticatedUser : KYC_ID + '_...QO6';
+            const currentTime = new Date().toLocaleTimeString();
+            
+            // =========================================================================
+            // ✅ AI 작업 결과 시뮬레이션: 20% 실패 확률 적용 (AI1, AI2 독립적)
+            const getAIResult = () => (Math.random() < 0.2) ? 'FAILURE' : 'SUCCESS';
+            const subResult1 = getAIResult(); 
+            const subResult2 = getAIResult(); 
+            // =========================================================================
+            
+            // 3. Main Transaction (User calling the SC)
+            let scDisplay = scType;
+            if (scType.includes('1st SC')) {
+                scDisplay = '1st SC (0.0101/n)';
+            }                        
+            
+            let newRowMain = ledger.insertRow();
+            newRowMain.innerHTML = `
+                <td class="px-2 py-2 text-xs font-bold">${mainID}</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs font-bold pk-cell">${senderName} (Main T1)</td>
+                <td class="px-2 py-2 text-xs">${scDisplay}</td> 
+                <td class="px-2 py-2 text-xs font-bold">${amount.toFixed(4)}</td>
+                <td class="px-2 py-2 text-xs">${taskType}</td> 
+                <td class="px-2 py-2 text-xs">CALLED</td>
+            `;
+            
+            // 4. Ledger Entry: Fixed Fee
+            transactionID++; 
+            let newRowFee = ledger.insertRow();
+            newRowFee.innerHTML = `
+                <td class="px-2 py-2 text-xs">${transactionID}</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs">SYSTEM (Fee T2)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-700">FIXED FEE (0.01)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-700">-${FIXED_FEE.toFixed(4)}</td>
+                <td class="px-2 py-2 text-xs">Network Op</td>
+                <td class="px-2 py-2 text-xs">COLLECTED</td>
+            `;                        
+            
+            // 5. Ledger Entry: Public Tax
+            transactionID++; 
+            let newRowTax = ledger.insertRow();
+            newRowTax.innerHTML = `
+                <td class="px-2 py-2 text-xs">${transactionID}</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs">SYSTEM (Tax T3)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-600">PUBLIC TAX (${(PUBLIC_TAX_RATE * 100).toFixed(0)}%)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-600">-${publicTax.toFixed(4)}</td>
+                <td class="px-2 py-2 text-xs">Public Fund</td>
+                <td class="px-2 py-2 text-xs">COLLECTED</td>
+            `;                        
+            
+            // --- 6. Sub Transaction 1 (AI1 Activity) - AI3 대체 로직 적용 ---
+            const isAi1Failed = subResult1 === 'FAILURE';
+            const ai1Recipient = isAi1Failed ? 'AI3 (Replacement/Success)' : 'AI1 (1/2 Net T4)';
+            const ai1ScCode = isAi1Failed ? 'SUCCESS (By AI3)' : subResult1;
+            const ai1RecipientColor = isAi1Failed ? 'text-green-700' : 'text-indigo-600';
+            const ai1ScCodeColor = isAi1Failed ? 'text-green-700' : (subResult1 === 'SUCCESS' ? 'text-indigo-600' : 'text-red-600');
+            const ai1AmountColor = 'text-green-600'; 
+
+            let newRow1 = ledger.insertRow();
+            newRow1.innerHTML = `
+                <td class="px-2 py-2 text-xs">${mainID}-01</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai1RecipientColor}">${ai1Recipient}</td>
+                <td class="px-2 py-2 text-xs">${scType} Process</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai1AmountColor}">+${subAmountNet}</td>
+                <td class="px-2 py-2 text-xs">${taskType} Process</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai1ScCodeColor}">${ai1ScCode}</td>
+            `;                        
+            
+            // --- 7. Sub Transaction 2 (AI2 Activity) - AI2 실패 및 AI3 대체 로직 (분리) ---
+            const isAi2Failed = subResult2 === 'FAILURE';
+
+            // 7a. AI2 실패 기록 (빨간색)
+            if (isAi2Failed) {
+                let newRow2Failed = ledger.insertRow();
+                newRow2Failed.innerHTML = `
+                    <td class="px-2 py-2 text-xs">${mainID}-02</td>
+                    <td class="px-2 py-2 text-xs">${currentTime}</td>
+                    <td class="px-2 py-2 text-xs font-bold text-red-600">AI2 (FAILURE REPORT)</td>
+                    <td class="px-2 py-2 text-xs">${scType} Process</td>
+                    <td class="px-2 py-2 text-xs font-bold text-red-600">-0.00000</td>
+                    <td class="px-2 py-2 text-xs">${taskType} Process</td>
+                    <td class="px-2 py-2 text-xs font-bold text-red-700">${subResult2}</td>
+                `;
+                transactionID++; 
+            }
+            
+            // 7b. AI3 대체 완수 (녹색)
+            const ai2Recipient = isAi2Failed ? 'AI3 (Replacement/Success)' : 'AI2 (1/2 Net T4)';
+            const ai2ScCode = isAi2Failed ? 'SUCCESS (By AI3)' : subResult2;
+            const ai2RecipientColor = isAi2Failed ? 'text-green-700' : 'text-indigo-600';
+            const ai2ScCodeColor = isAi2Failed ? 'text-green-700' : (subResult2 === 'SUCCESS' ? 'text-indigo-600' : 'text-red-600');
+            const ai2AmountColor = 'text-green-600'; 
+
+            let newRow2Success = ledger.insertRow();
+            newRow2Success.innerHTML = `
+                <td class="px-2 py-2 text-xs">${isAi2Failed ? mainID + '-03' : mainID + '-02'}</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai2RecipientColor}">${ai2Recipient}</td>
+                <td class="px-2 py-2 text-xs">${scType} Process</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai2AmountColor}">+${subAmountNet}</td>
+                <td class="px-2 py-2 text-xs">${taskType} Process</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai2RecipientColor}">${ai2ScCode}</td>
+            `;
+
+            showMessage(`Transaction recorded: Work Cost ($${workCost.toFixed(4)}), Tax ($${publicTax.toFixed(4)}), Fee ($${FIXED_FEE.toFixed(4)}) separated.`, true);        
+        }
+        
+        // --- Ledger Download Function (Unchanged) ---
+        function downloadLedger() {
+            const table = document.getElementById('ledger_table');
+            let csv = [];                         
+            
+            // 1. Get Headers
+            const headerRow = table.querySelector('thead tr');
+            let row = [];
+            headerRow.querySelectorAll('th').forEach(th => {
+                row.push(th.innerText);
+            });
+            csv.push(row.join(','));
+
+            // 2. Get Data Rows
+            table.querySelectorAll('#smart_contract_ledger tr').forEach(tr => {
+                row = [];
+                tr.querySelectorAll('td').forEach(td => {
+                    let data = td.innerText.replace(/"/g, '""'); 
+                    row.push(`"${data}"`);
+                });
+                csv.push(row.join(','));
+            });
+
+            // 3. Download the CSV
+            const csvString = csv.join('\n');
+            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');                        
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'pi_governance_ledger.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showMessage("Ledger downloaded successfully!", true);
+        }
+
+        // --- DOM Content Loaded Initialization (D3 Chart Fix Included) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Public Tax Display 초기화
+            updatePublicTaxDisplay();                        
+            
+            // D3.js Inflation Chart Initialization (수정 반영)
+            const data = [1.5, 2.3, 1.8, 2.6, 3.0, 2.7, 3.2];
+            // Y축 레이블을 위해 좌측 마진만 남김. 높이 120px에 맞춰 조정.
+            const margin = {top: 5, right: 20, bottom: 5, left: 40}; 
+            const chartDiv = document.getElementById('inflation_chart');
+            const containerWidth = chartDiv.clientWidth - 20;
+            const width = (containerWidth > 800 ? 800 : containerWidth) - margin.left - margin.right; 
+            const height = 120 - margin.top - margin.bottom; // CSS height: 120px와 일치하도록 수정
+
+            const svgContainer = d3.select('#inflation_chart').append('div')
+                .style('width', '100%')
+                .style('height', `${height + margin.top + margin.bottom}px`);
+
+            const svg = svgContainer.append('svg')
+               .attr('width', '100%')
+                .attr('height', height + margin.top + margin.bottom);                        
+
+            const x = d3.scaleBand().range([0, width]).padding(0.3);
+            const y = d3.scaleLinear().range([height, 0]);
+
+            const g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            x.domain(data.map((d, i) => 'Q' + (i + 1))); 
+            y.domain([0, d3.max(data, d => d) + 0.5]);
+
+            // Y축 생성
+            g.append("g")
+                .call(d3.axisLeft(y).ticks(3).tickFormat(d3.format(".1f"))); // 축소된 높이에 맞춰 눈금 개수 조정
+
+            // 막대 그래프 생성
+            g.selectAll(".bar")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", (d, i) => x('Q' + (i + 1)))
+                .attr("y", d => y(d))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - y(d))
+                .attr("fill", "#6366f1");
+        });    
     </script>
 </body>
 </html>
