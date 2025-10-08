@@ -62,6 +62,7 @@
             border-radius: 0.375rem;
             margin-top: 0.25rem;
         }
+        /* SCP Status는 테이블 컨테이너 우측 상단에 절대 위치로 고정 */
         .scp-consensus {
             position: absolute;
             top: 0;
@@ -75,11 +76,11 @@
             transition: opacity 0.5s;
         }
         .ledger-header-container {
+            /* [수정] CSV 버튼과 제목을 분리하여 flex로 정렬 */
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1rem;
-            position: relative;
         }
         .download-button {
             background-color: #60a5fa;
@@ -123,14 +124,12 @@
             background-color: #d1fae5;
             color: #065f46;
         }
-        /* AI 실패 상태 */
         .status-failed {
             background-color: #fee2e2;
             color: #b91c1c;
         }
-        /* 공공세 표시 스타일 */
         .public-tax-display {
-            background-color: #f59e0b; /* Amber */
+            background-color: #f59e0b; 
             color: white;
             padding: 0.5rem 1rem;
             border-radius: 0.5rem;
@@ -209,10 +208,12 @@
         </div>
 
         <div class="table-container p-6 mb-8 relative bg-white rounded-xl shadow-lg">
+            
+            <div id="scp_consensus_status" class="scp-consensus" style="opacity: 0;">SCP Consensus: 0/10001 Nodes</div>
+            
             <div class="ledger-header-container">
                 <h2 class="text-2xl font-bold text-gray-800">TRANSACTION LEDGER</h2>
                 <button class="download-button" onclick="downloadLedger()">📥 Download CSV</button> 
-                <div id="scp_consensus_status" class="scp-consensus" style="opacity: 0;">SCP Consensus: 0/10001 Nodes</div>
             </div>
             <div class="overflow-x-auto">
                 <table id="ledger_table">
@@ -441,7 +442,7 @@
             ledger.innerHTML = mainRow + taxRow + subRow1 + subRow2 + ai3Row + ledger.innerHTML;
         }
 
-        // CSV 다운로드 (수정 완료)
+        // CSV 다운로드 (기능 보장 수정 완료)
         function downloadLedger() {
             const table = document.getElementById('ledger_table');
             let csv = [];
