@@ -49,7 +49,7 @@
             display: block;
             margin-bottom: 2rem;
         }
-        /* [수정] SCP Consensus Animation Style */
+        /* SCP Consensus Animation Style */
         .scp-consensus {
             /* absolute 제거: 이제 플렉스 컨테이너 안에서 인라인 요소처럼 행동 */
             font-size: 0.8rem;
@@ -63,7 +63,7 @@
             transition: opacity 0.3s;
             margin-right: 1rem; /* 다운로드 버튼과의 간격 확보 */
         }
-        /* [수정] Ledger header container for flex */
+        /* Ledger header container for flex */
         .ledger-header-container {
             display: flex;
             align-items: center;
@@ -278,15 +278,17 @@
             }, 500);
         }                
         
-        // --- MOCKED Pi SDK Functions ---                
-        function piAuthenticate() {
+        // --- MOCKED Pi SDK Functions ---
+        
+        // ✅ [수정] Window 객체에 함수를 할당하여 HTML의 onclick 이벤트가 바로 찾을 수 있도록 보장
+        window.piAuthenticate = function() {
             authenticatedUser = mockUsername;
             showMessage(`Pi ID: ${authenticatedUser} authenticated successfully (MOCKED).`, true);
             document.getElementById('login_button').disabled = true;
             document.getElementById('payment_button').disabled = false;
         }
 
-        function piRequestPayment() {
+        window.piRequestPayment = function() {
             if (!authenticatedUser) {
                 showMessage("Please log in with Pi first.", false);
                 return;
@@ -338,7 +340,6 @@
             
             // =========================================================================
             // ✅ AI 작업 결과 시뮬레이션: 20% 실패 확률 적용 (AI1, AI2 독립적)
-            // Math.random() < 0.2 이면 'FAILURE' (20%)
             const getAIResult = () => (Math.random() < 0.2) ?
             'FAILURE' : 'SUCCESS';
             const subResult1 = getAIResult(); // AI1 결과
@@ -448,7 +449,7 @@
             showMessage(`Transaction recorded: Work Cost ($${workCost.toFixed(4)}), Tax ($${publicTax.toFixed(4)}), Fee ($${FIXED_FEE.toFixed(4)}) separated.`, true);
         }
         
-        // --- Ledger Download Function (Unchanged) ---
+        // --- Ledger Download Function ---
         function downloadLedger() {
             const table = document.getElementById('ledger_table');
             let csv = [];                        
@@ -502,4 +503,40 @@
             const margin = {top: 20, right: 20, bottom: 40, left: 40};
             const chartDiv = document.getElementById('inflation_chart');
             const containerWidth = chartDiv.clientWidth - 20;
-            const width = (containerWidth > 800 ? 800 :
+            const width = (containerWidth > 800 ? 800 : containerWidth) - margin.left - margin.right; 
+            const height = 300 - margin.top - margin.bottom;
+
+            const svgContainer = d3.select('#inflation_chart').append('div')
+                .style('width', '100%')
+                .style('height', `${height + margin.top + margin.bottom}px`);
+
+            const svg = svgContainer.append('svg')
+               .attr('width', '100%')
+                .attr('height', height + margin.top + margin.bottom);
+            const x = d3.scaleBand().range([0, width]).padding(0.3);
+            const y = d3.scaleLinear().range([height, 0]);
+            const g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            x.domain(data.map((d, i) => 'Q' + (i + 1))); 
+            y.domain([0, d3.max(data, d => d) + 0.5]);
+            g.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+            g.append("g")
+                .call(d3.axisLeft(y).ticks(5));
+            g.selectAll(".bar")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", (d, i) => x('Q' + (i + 1)))
+                .attr("y", d => y(d))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - y(d))
+                .attr("fill", "#6366f1");
+                
+            // 초기에 로그인 버튼이 활성화되어 있도록 보장 (HTML에 disabled가 없으므로)
+            // document.getElementById('login_button').disabled = false; // 불필요하여 제거
+        });    
+    </script>
+</body>
+</html>
