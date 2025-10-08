@@ -123,12 +123,12 @@
             background-color: #d1fae5;
             color: #065f46;
         }
-        /* [추가] AI 실패 상태 */
+        /* AI 실패 상태 */
         .status-failed {
             background-color: #fee2e2;
             color: #b91c1c;
         }
-        /* [추가] 공공세 표시 스타일 */
+        /* 공공세 표시 스타일 */
         .public-tax-display {
             background-color: #f59e0b; /* Amber */
             color: white;
@@ -311,7 +311,7 @@
             runSimulation(amount, taskType, 'DEMO-TX-ID-' + Date.now()); 
         }
         
-        // [수정] 시뮬레이션 실행 (실패 로직 및 AI3, 공공세 20% 포함)
+        // 시뮬레이션 실행 (실패 로직 및 AI3, 공공세 20% 포함)
         function runSimulation(amount, taskType, paymentId) {
             const scType = amount <= 2.0 ? '1st SC (Survival)' : '2nd SC (Market)';
             startSCPAnimation(scType);
@@ -320,7 +320,7 @@
             transactionID++;
             const mainID = `TX-${transactionID}`;
             
-            // [핵심 로직] 공공세 20% 계산 및 반영
+            // 핵심 로직: 공공세 20% 계산 및 반영
             const taxRate = 0.20;
             const taxAmount = amount * taxRate;
             const netAmount = amount - taxAmount;
@@ -329,13 +329,13 @@
             document.getElementById('public_tax_total').textContent = `Public Tax Total: ${publicTaxTotal.toFixed(4)} π`;
 
 
-            const subAmountBase = (netAmount / 2).toFixed(4); // 공공세 제외된 금액을 2개로 나눔 (실패 시 보상을 위해)
+            const subAmountBase = (netAmount / 2).toFixed(4); // 공공세 제외된 금액을 2개로 나눔
             const sender = authenticatedUser || 'System';
             const currentTime = new Date().toLocaleTimeString();
 
-            // 트랜잭션 상태를 결정하는 함수
+            // 트랜잭션 상태를 결정하는 함수 (20% 확률로 실패)
             function getStatus(isFinal = false) {
-                if (Math.random() < 0.20) { // 20% 확률로 실패
+                if (Math.random() < 0.20) { 
                     return {
                         status: 'FAILED',
                         badgeClass: 'status-failed',
@@ -368,7 +368,7 @@
                 </tr>
             `;
             
-            // [추가] 공공세 트랜잭션 (메인 아래에 위치)
+            // 공공세 트랜잭션
             const taxRow = `
                 <tr class="hover:bg-gray-50 bg-yellow-50">
                     <td class="px-2 py-2">${mainID}-TAX</td>
@@ -410,16 +410,15 @@
                 </tr>
             `;
             
-            // AI3 (대체 AI) 로직
+            // AI3 (대체 AI) 로직 (AI1 또는 AI2 실패 시 작동)
             let ai3Row = '';
             let finalMessage = '✓ Transaction recorded successfully!';
             let isOverallSuccess = true;
 
             if (!status1.isSuccess || !status2.isSuccess) {
-                 // AI1 또는 AI2가 실패했을 경우, AI3가 등장하여 잔여 금액을 보상
-                 
+                 // netAmount에서 성공한 AI에게 지급된 금액을 뺀 잔액을 AI3가 보상
                  const successfulPayments = (status1.isSuccess ? parseFloat(status1.amount) : 0) + (status2.isSuccess ? parseFloat(status2.amount) : 0);
-                 const compensatedAmount = netAmount - successfulPayments; // netAmount에서 성공한 AI에게 지급된 금액을 뺀 잔액
+                 const compensatedAmount = netAmount - successfulPayments; 
                  
                  ai3Row = `
                     <tr class="hover:bg-gray-50 bg-red-100">
@@ -438,42 +437,52 @@
 
             showMessage(finalMessage, isOverallSuccess);
 
-            // 최종적으로 레저에 기록
+            // 최종적으로 레저에 기록: 메인 -> 공공세 -> AI1 -> AI2 -> (실패 시) AI3
             ledger.innerHTML = mainRow + taxRow + subRow1 + subRow2 + ai3Row + ledger.innerHTML;
         }
 
-        // CSV 다운로드 (기존과 동일)
+        // CSV 다운로드 (수정 완료)
         function downloadLedger() {
             const table = document.getElementById('ledger_table');
             let csv = [];
 
-            // 헤더
+            // 1. 헤더 추출
             const headers = Array.from(table.querySelectorAll('thead th'))
                 .map(th => th.textContent.trim());
             csv.push(headers.join(','));
 
-            // 데이터
+            // 2. 데이터 추출
             const rows = Array.from(table.querySelectorAll('tbody tr'));
             rows.forEach(row => {
+                // 셀 내부의 텍스트만 추출하고, 쉼표를 포함할 수 있는 문자를 위해 따옴표로 감쌈
                 const cells = Array.from(row.querySelectorAll('td'))
-                    .map(td => `"${td.textContent.trim()}"`);
+                    .map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`); // 따옴표 이스케이프 처리
                 csv.push(cells.join(','));
             });
 
             const csvString = csv.join('\n');
-            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            
+            // 3. BOM(Byte Order Mark) 추가 및 Blob 생성 (한글 깨짐 방지)
+            const BOM = "\uFEFF"; 
+            const finalCsvData = BOM + csvString;
+            
+            const blob = new Blob([finalCsvData], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
+            
+            // 4. 다운로드 실행
             const link = document.createElement('a');
             link.href = url;
-            link.download = `pi_ledger_${Date.now()}.csv`;
+            link.download = `pi_transaction_ledger_${new Date().toISOString().slice(0, 10)}.csv`;
+            
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            URL.revokeObjectURL(url); // 메모리 해제
 
             showMessage('✓ Ledger downloaded!', true);
         }
 
-        // D3 차트 초기화 (기존과 동일)
+        // D3 차트 초기화
         function initChart() {
             const data = [1.5, 2.3, 1.8, 2.6, 3.0, 2.7, 3.2];
             const margin = { top: 20, right: 20, bottom: 40, left: 40 };
@@ -481,7 +490,6 @@
             
             if (!chartElement) return;
             
-            // 차트 영역 크기 조정 (공공세 텍스트와 겹치지 않도록)
             const width = Math.min(chartElement.clientWidth, 800) - margin.left - margin.right;
             const height = 250 - margin.top - margin.bottom;
 
