@@ -31,13 +31,15 @@
             border-radius: 1rem 1rem 0 0;
             box-shadow: 0 2px 15px -5px rgba(0, 0, 0, 0.1);
         }
+        /* 인플레이션 차트 높이 120px로 조정 */
         .inflation-chart {
-            height: 300px;
+            height: 120px;
             background: white;
             padding: 1rem;
             margin: 2rem 0;
             border-radius: 1rem;
             box-shadow: 0 2px 15px -5px rgba(0, 0, 0, 0.1);
+            overflow: hidden; 
         }
         /* Real-time Block Explorer iframe style */
         #block_explorer_iframe {
@@ -51,7 +53,6 @@
         }
         /* SCP Consensus Animation Style */
         .scp-consensus {
-            /* absolute 제거: 이제 플렉스 컨테이너 안에서 인라인 요소처럼 행동 */
             font-size: 0.8rem;
             font-weight: bold;
             color: white;
@@ -61,16 +62,16 @@
             white-space: nowrap;
             opacity: 0;
             transition: opacity 0.3s;
-            margin-right: 1rem; /* 다운로드 버튼과의 간격 확보 */
+            /* [수정] 다운로드 버튼과의 간격 조정 */
+            margin-left: 0.5rem;
         }
         /* Ledger header container for flex */
         .ledger-header-container {
             display: flex;
             align-items: center;
-            /* 제목과 버튼 그룹을 양쪽 끝으로 정렬 */
+            /* [수정] 제목과 버튼 그룹을 양쪽 끝으로 정렬 */
             justify-content: space-between; 
             margin-bottom: 1rem;
-            position: relative;
         }
         /* Download button style */
         .download-button {
@@ -82,6 +83,8 @@
             font-weight: bold;
             cursor: pointer;
             border: none;
+            /* [수정] flex 그룹 내에서 제목과 분리하기 위해 마진 유지 */
+            margin-left: 1rem;
             transition: background-color 0.2s;
         }
         .download-button:hover {
@@ -134,6 +137,22 @@
         .gap-4 {
             gap: 1rem;
         }
+        /* NFT 버튼 스타일 */
+        .nft-button {
+            background-color: #9c27b0; /* 보라색 계열 (NFT/크리에이터 테마) */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            transition: background-color 0.2s;
+            margin-top: 2rem; /* 장부와 분리 */
+        }
+        .nft-button:hover {
+            background-color: #7b1fa2;
+        }
     </style>
 </head>
 <body>
@@ -160,7 +179,6 @@
                     2. Request Pi Payment (Start SC - MOCKED)
                 </button>
             </div>
-            
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label htmlFor="piAmount">Pi Amount (for SC Selection):</label>
@@ -184,20 +202,18 @@
                 allow="autoplay; encrypted-media"></iframe>
         <div id="inflation_chart" class="inflation-chart">
             <div class="flex justify-between items-center mb-2">
-                <h3 class="text-lg font-bold text-gray-700">Pi Economy Inflation Index (Simulated)</h3>
-                <span id="public_tax_display" class="text-base font-bold text-green-600">Public Tax Pool: 0.0000 Pi</span>
+                <h3 class="text-sm font-bold text-gray-700">Pi Economy Inflation Index (Simulated)</h3>
+                <span id="public_tax_display" class="text-sm font-bold text-green-600">Public Tax Pool: 0.0000 Pi</span>
             </div>
         </div>
         <div class="table-container p-6 mb-8 relative bg-white rounded-xl shadow-lg">
-            
             <div class="ledger-header-container">
                 <h2 class="text-2xl font-bold text-gray-800">TRANSACTION LEDGER (Off-Chain/Logical)</h2>
                 <div class="flex items-center">
-                    <div id="scp_consensus_status" class="scp-consensus" style="opacity: 0;">SCP Consensus: 0/10001 Nodes</div>
                     <button class="download-button" onclick="downloadLedger()">Download CSV</button>
+                    <div id="scp_consensus_status" class="scp-consensus" style="opacity: 0;">SCP Consensus: 0/10001 Nodes</div>
                 </div>
             </div>
-            
             <table class="min-w-full divide-y divide-gray-200" id="ledger_table">
                 <thead>
                     <tr class="bg-gray-50">
@@ -211,24 +227,26 @@
                     </tr>
                 </thead>
                 <tbody id="smart_contract_ledger">
-                </tbody>
+                    </tbody>
             </table>
+            <button class="nft-button" onclick="window.open('https://github.com/jjulddugi65/pibot/blob/main/index.html', '_blank')">
+                Go to Pi NFT Marketplace (Concept) 🚀
+            </button>
         </div>
     </div>
     <script>
         // === Core Variables ===
-        let transactionID = 18; // 마지막 ID 이후부터 시작
+        let transactionID = 18; 
         const maxNodes = 10001;
-        let authenticatedUser = null;
-        // Public Key가 포함된 모의 사용자 이름 설정 (KYC ID + 줄인 Public Key)
-        const MOCK_PUBLIC_KEY_SHORT = 'GDUVQR...QO6';
+        let authenticatedUser = null;                   
+        const MOCK_PUBLIC_KEY_SHORT = 'GDUVQR...QO6';           
         const KYC_ID = '10821';         
-        const mockUsername = KYC_ID + '_' + MOCK_PUBLIC_KEY_SHORT; // 최종 장부 표기
+        const mockUsername = KYC_ID + '_' + MOCK_PUBLIC_KEY_SHORT; 
 
         // --- Public Tax (공공세) & Economy Variables ---
-        const PUBLIC_TAX_RATE = 0.01; // 1% Public Tax (0.01)
+        const PUBLIC_TAX_RATE = 0.02; // 2% Public Tax (0.02)
         const FIXED_FEE = 0.01; // 고정 수수료 (0.01 Pi)
-        let publicTaxPool = 0.0; // 누적 공공세 풀 (합계액)
+        let publicTaxPool = 0.0; 
         // ----------------------------------------------------
         
         // --- Utility Functions ---
@@ -241,10 +259,10 @@
             
             messageBox.classList.remove('bg-green-600', 'bg-red-600', 'bg-gray-800');
             if (isSuccess) {
-                messageBox.style.backgroundColor = '#4CAF50'; /* Green */
+                messageBox.style.backgroundColor = '#4CAF50'; 
             } else {
-                messageBox.style.backgroundColor = '#F44336'; /* Red */
-            }                        
+                messageBox.style.backgroundColor = '#F44336'; 
+            }                       
             setTimeout(() => {
                 messageBox.style.transform = 'translateX(-50%) scale(0)';
             }, 3000);
@@ -264,23 +282,21 @@
             scpStatusElement.style.opacity = 1;
 
             const consensusSteps = [31, 314, 3141, maxNodes]; 
-            let stepIndex = 0;
+            let stepIndex = 0;                        
             showMessage(`AI selected ${scType}. Starting MOCKED SCP Consensus...`, true); 
 
             const interval = setInterval(() => {
                 const currentCount = consensusSteps[stepIndex];
-                scpStatusElement.textContent = `SCP Consensus: ${currentCount}/${maxNodes} Nodes`;                                
+                scpStatusElement.textContent = `SCP Consensus: ${currentCount}/${maxNodes} Nodes`;                            
                 stepIndex++;
                 if (stepIndex >= consensusSteps.length) {
                     clearInterval(interval);
                     scpStatusElement.textContent = `SCP Consensus: 10001/${maxNodes} Nodes (Finalized)`;
                 }
-            }, 500);
-        }                
+            }, 500);          
+        }            
         
-        // --- MOCKED Pi SDK Functions ---
-        
-        // ✅ [수정] Window 객체에 함수를 할당하여 HTML의 onclick 이벤트가 바로 찾을 수 있도록 보장
+        // --- MOCKED Pi SDK Functions (window 할당으로 onclick ReferenceError 해결) ---            
         window.piAuthenticate = function() {
             authenticatedUser = mockUsername;
             showMessage(`Pi ID: ${authenticatedUser} authenticated successfully (MOCKED).`, true);
@@ -298,41 +314,41 @@
             const taskType = document.getElementById('taskType').value; 
 
             if (isNaN(amount) || amount <= 0) { 
-                 showMessage("Please enter a valid Pi Amount.", false);
+                showMessage("Please enter a valid Pi Amount.", false); 
                 return;
             }
 
-            const minRequiredAmount = 0.0101;
+            const minRequiredAmount = 0.0101;                          
             if (amount < minRequiredAmount) { 
-                 showMessage(`Pi Amount must be greater than or equal to ${minRequiredAmount.toFixed(4)} Pi (0.0101/n logic).`, false);
+                showMessage(`Pi Amount must be greater than or equal to ${minRequiredAmount.toFixed(4)} Pi (0.0101/n logic).`, false);
                 return;
             }
 
             showMessage(`MOCKED Payment request ($${amount.toFixed(4)}$ Pi) sent. Starting SC execution...`, true);
-            runSimulation(taskType);         
-        }                
+            runSimulation(taskType);          
+        }            
 
-        // --- Simulation & Core Logic (Called upon successful payment) ---        
+        // --- Simulation & Core Logic (Called upon successful payment) ---         
         function runSimulation(taskType) {
             const piAmountInput = document.getElementById('piAmount').value;
-            const amount = parseFloat(piAmountInput);                        
+            const amount = parseFloat(piAmountInput);                       
             
             // --- 1. 경제 로직: 작업 비용 (W), 공공세 (P), 고정 수수료 (F) 역산 ---
-            const workCost = (amount - FIXED_FEE) / (1 + PUBLIC_TAX_RATE);
-            const publicTax = workCost * PUBLIC_TAX_RATE;                        
+            const workCost = (amount - FIXED_FEE) / (1 + PUBLIC_TAX_RATE);                       
+            const publicTax = workCost * PUBLIC_TAX_RATE;                       
             publicTaxPool += publicTax;
-            updatePublicTaxDisplay();
+            updatePublicTaxDisplay(); 
             // ------------------------------------------------------------------
 
             // 2. Smart Contract Selection (Work Cost 기준으로 1st/2nd SC 선택)            
-            let scType = workCost >= 2.0 ?
-            '2nd SC (Market)' : '1st SC (Survival)';
+            let scType = workCost >= 2.0 ? '2nd SC (Market)' : '1st SC (Survival)';
 
             startSCPAnimation(scType); 
-            const ledger = document.getElementById('smart_contract_ledger');
+            const ledger = document.getElementById('smart_contract_ledger');                        
+            
             // Main Transaction ID            
             transactionID++;
-            const mainID = transactionID;                        
+            const mainID = transactionID;                       
             
             const subAmountNet = (workCost / 2.0).toFixed(5);
             const senderName = authenticatedUser ? authenticatedUser : KYC_ID + '_...QO6';
@@ -340,10 +356,9 @@
             
             // =========================================================================
             // ✅ AI 작업 결과 시뮬레이션: 20% 실패 확률 적용 (AI1, AI2 독립적)
-            const getAIResult = () => (Math.random() < 0.2) ?
-            'FAILURE' : 'SUCCESS';
-            const subResult1 = getAIResult(); // AI1 결과
-            const subResult2 = getAIResult(); // AI2 결과
+            const getAIResult = () => (Math.random() < 0.2) ? 'FAILURE' : 'SUCCESS';
+            const subResult1 = getAIResult(); 
+            const subResult2 = getAIResult(); 
             // =========================================================================
             
             // 3. Main Transaction (User calling the SC)
@@ -362,8 +377,9 @@
                 <td class="px-2 py-2 text-xs">${taskType}</td> 
                 <td class="px-2 py-2 text-xs">CALLED</td>
             `;
+            
             // 4. Ledger Entry: Fixed Fee
-            transactionID++;
+            transactionID++; 
             let newRowFee = ledger.insertRow();
             newRowFee.innerHTML = `
                 <td class="px-2 py-2 text-xs">${transactionID}</td>
@@ -373,28 +389,28 @@
                 <td class="px-2 py-2 text-xs font-bold text-red-700">-${FIXED_FEE.toFixed(4)}</td>
                 <td class="px-2 py-2 text-xs">Network Op</td>
                 <td class="px-2 py-2 text-xs">COLLECTED</td>
-            `;
+            `;                        
+            
             // 5. Ledger Entry: Public Tax
-            transactionID++;
+            transactionID++; 
             let newRowTax = ledger.insertRow();
             newRowTax.innerHTML = `
                 <td class="px-2 py-2 text-xs">${transactionID}</td>
                 <td class="px-2 py-2 text-xs">${currentTime}</td>
                 <td class="px-2 py-2 text-xs">SYSTEM (Tax T3)</td>
-                <td class="px-2 py-2 text-xs font-bold text-red-600">PUBLIC TAX (1%)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-600">PUBLIC TAX (${(PUBLIC_TAX_RATE * 100).toFixed(0)}%)</td>
                 <td class="px-2 py-2 text-xs font-bold text-red-600">-${publicTax.toFixed(4)}</td>
                 <td class="px-2 py-2 text-xs">Public Fund</td>
                 <td class="px-2 py-2 text-xs">COLLECTED</td>
-            `;
+            `;                        
+            
             // --- 6. Sub Transaction 1 (AI1 Activity) - AI3 대체 로직 적용 ---
             const isAi1Failed = subResult1 === 'FAILURE';
             const ai1Recipient = isAi1Failed ? 'AI3 (Replacement/Success)' : 'AI1 (1/2 Net T4)';
-            const ai1ScCode = isAi1Failed ?
-            'SUCCESS (By AI3)' : subResult1;
+            const ai1ScCode = isAi1Failed ? 'SUCCESS (By AI3)' : subResult1;
             const ai1RecipientColor = isAi1Failed ? 'text-green-700' : 'text-indigo-600';
-            const ai1ScCodeColor = isAi1Failed ?
-            'text-green-700' : (subResult1 === 'SUCCESS' ? 'text-indigo-600' : 'text-red-600');
-            const ai1AmountColor = 'text-green-600'; // 금액은 성공으로 간주하고 녹색
+            const ai1ScCodeColor = isAi1Failed ? 'text-green-700' : (subResult1 === 'SUCCESS' ? 'text-indigo-600' : 'text-red-600');
+            const ai1AmountColor = 'text-green-600'; 
 
             let newRow1 = ledger.insertRow();
             newRow1.innerHTML = `
@@ -405,38 +421,36 @@
                 <td class="px-2 py-2 text-xs font-bold ${ai1AmountColor}">+${subAmountNet}</td>
                 <td class="px-2 py-2 text-xs">${taskType} Process</td>
                 <td class="px-2 py-2 text-xs font-bold ${ai1ScCodeColor}">${ai1ScCode}</td>
-            `;
+            `;                        
+            
             // --- 7. Sub Transaction 2 (AI2 Activity) - AI2 실패 및 AI3 대체 로직 (분리) ---
             const isAi2Failed = subResult2 === 'FAILURE';
-            // 7a. AI2 실패 기록 (빨간색) - 금액 0.00000으로 명확히 표기
+
+            // 7a. AI2 실패 기록 (빨간색)
             if (isAi2Failed) {
-                // AI2는 실패했으나, 이 트랜잭션에서는 금액을 받지 않음 (AI3가 대체하므로)
                 let newRow2Failed = ledger.insertRow();
                 newRow2Failed.innerHTML = `
                     <td class="px-2 py-2 text-xs">${mainID}-02</td>
                     <td class="px-2 py-2 text-xs">${currentTime}</td>
                     <td class="px-2 py-2 text-xs font-bold text-red-600">AI2 (FAILURE REPORT)</td>
                     <td class="px-2 py-2 text-xs">${scType} Process</td>
-                    <td class="px-2 py-2 text-xs font-bold text-red-600">0.00000</td> 
+                    <td class="px-2 py-2 text-xs font-bold text-red-600">-0.00000</td>
                     <td class="px-2 py-2 text-xs">${taskType} Process</td>
                     <td class="px-2 py-2 text-xs font-bold text-red-700">${subResult2}</td>
                 `;
-                transactionID++; // 대체 트랜잭션 ID 증가
+                transactionID++; 
             }
             
-            // 7b. AI2 또는 AI3 대체 완수 (녹색)
-            const ai2Recipient = isAi2Failed ?
-            'AI3 (Replacement/Success)' : 'AI2 (1/2 Net T4)';
+            // 7b. AI3 대체 완수 (녹색)
+            const ai2Recipient = isAi2Failed ? 'AI3 (Replacement/Success)' : 'AI2 (1/2 Net T4)';
             const ai2ScCode = isAi2Failed ? 'SUCCESS (By AI3)' : subResult2;
             const ai2RecipientColor = isAi2Failed ? 'text-green-700' : 'text-indigo-600';
-            const ai2ScCodeColor = isAi2Failed ?
-            'text-green-700' : (subResult2 === 'SUCCESS' ? 'text-indigo-600' : 'text-red-600');
-            const ai2AmountColor = 'text-green-600'; // 성공적인 보상이므로 녹색
+            const ai2ScCodeColor = isAi2Failed ? 'text-green-700' : (subResult2 === 'SUCCESS' ? 'text-indigo-600' : 'text-red-600');
+            const ai2AmountColor = 'text-green-600'; 
 
             let newRow2Success = ledger.insertRow();
             newRow2Success.innerHTML = `
-                <td class="px-2 py-2 text-xs">${isAi2Failed ?
-                mainID + '-03' : mainID + '-02'}</td>
+                <td class="px-2 py-2 text-xs">${isAi2Failed ? mainID + '-03' : mainID + '-02'}</td>
                 <td class="px-2 py-2 text-xs">${currentTime}</td>
                 <td class="px-2 py-2 text-xs font-bold ${ai2RecipientColor}">${ai2Recipient}</td>
                 <td class="px-2 py-2 text-xs">${scType} Process</td>
@@ -444,15 +458,14 @@
                 <td class="px-2 py-2 text-xs">${taskType} Process</td>
                 <td class="px-2 py-2 text-xs font-bold ${ai2RecipientColor}">${ai2ScCode}</td>
             `;
-            // AI2 성공 시에는 transactionID를 증가시키지 않음 (mainID-02가 마지막이므로)
-            // AI2 실패 시에는 이미 7a에서 증가했으므로 패스.
-            showMessage(`Transaction recorded: Work Cost ($${workCost.toFixed(4)}), Tax ($${publicTax.toFixed(4)}), Fee ($${FIXED_FEE.toFixed(4)}) separated.`, true);
+
+            showMessage(`Transaction recorded: Work Cost ($${workCost.toFixed(4)}), Tax ($${publicTax.toFixed(4)}), Fee ($${FIXED_FEE.toFixed(4)}) separated.`, true);        
         }
         
-        // --- Ledger Download Function ---
+        // --- Ledger Download Function (BOM 추가) ---
         function downloadLedger() {
             const table = document.getElementById('ledger_table');
-            let csv = [];                        
+            let csv = [];                         
             
             // 1. Get Headers
             const headerRow = table.querySelector('thead tr');
@@ -474,7 +487,7 @@
 
             // 3. Download the CSV
             const csvString = csv.join('\n');
-            // BOM 추가하여 한글 깨짐 방지
+            // BOM (Byte Order Mark) 추가하여 Excel 등에서 한글 깨짐 방지
             const BOM = "\uFEFF"; 
             const finalCsvData = BOM + csvString;
             
@@ -488,23 +501,23 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            URL.revokeObjectURL(url); // 메모리 해제
 
             showMessage("Ledger downloaded successfully!", true);
         }
 
-        // --- DOM Content Loaded Initialization (D3 Chart and Display Init) ---
+        // --- DOM Content Loaded Initialization (D3 Chart Fix Included) ---
         document.addEventListener('DOMContentLoaded', () => {
             // Public Tax Display 초기화
             updatePublicTaxDisplay();                        
             
-            // D3.js Inflation Chart Initialization (Unchanged)
+            // D3.js Inflation Chart Initialization (시각화 개선)
             const data = [1.5, 2.3, 1.8, 2.6, 3.0, 2.7, 3.2];
-            const margin = {top: 20, right: 20, bottom: 40, left: 40};
+            // Y축 레이블을 위해 좌측 마진만 남김. 높이 120px에 맞춰 조정.
+            const margin = {top: 5, right: 20, bottom: 5, left: 40}; 
             const chartDiv = document.getElementById('inflation_chart');
             const containerWidth = chartDiv.clientWidth - 20;
             const width = (containerWidth > 800 ? 800 : containerWidth) - margin.left - margin.right; 
-            const height = 300 - margin.top - margin.bottom;
+            const height = 120 - margin.top - margin.bottom; // CSS height: 120px와 일치하도록 수정
 
             const svgContainer = d3.select('#inflation_chart').append('div')
                 .style('width', '100%')
@@ -512,18 +525,22 @@
 
             const svg = svgContainer.append('svg')
                .attr('width', '100%')
-                .attr('height', height + margin.top + margin.bottom);
+                .attr('height', height + margin.top + margin.bottom);                        
+
             const x = d3.scaleBand().range([0, width]).padding(0.3);
             const y = d3.scaleLinear().range([height, 0]);
+
             const g = svg.append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
             x.domain(data.map((d, i) => 'Q' + (i + 1))); 
             y.domain([0, d3.max(data, d => d) + 0.5]);
+
+            // Y축 생성
             g.append("g")
-                .attr("transform", "translate(0," + height + ")")
-                .call(d3.axisBottom(x));
-            g.append("g")
-                .call(d3.axisLeft(y).ticks(5));
+                .call(d3.axisLeft(y).ticks(3).tickFormat(d3.format(".1f"))); // 축소된 높이에 맞춰 눈금 개수 조정
+
+            // 막대 그래프 생성
             g.selectAll(".bar")
                 .data(data)
                 .enter().append("rect")
@@ -533,9 +550,6 @@
                 .attr("width", x.bandwidth())
                 .attr("height", d => height - y(d))
                 .attr("fill", "#6366f1");
-                
-            // 초기에 로그인 버튼이 활성화되어 있도록 보장 (HTML에 disabled가 없으므로)
-            // document.getElementById('login_button').disabled = false; // 불필요하여 제거
         });    
     </script>
 </body>
