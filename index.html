@@ -3,537 +3,536 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FOR Pi MAXIMUM TRANSACTION - DEMO VERSION (Chrome Ready)</title>
-    
+    <title>FOR Pi MAXIMUM TRANSACTION Demo (SDK Mocked)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-
     <style>
+        /* CSS Styles */
         body {
             font-family: sans-serif;
             background-color: #f3f4f6;
             color: #1f2937;
+            padding: 2rem 1rem;
         }
         .container {
             max-width: 1200px;
             margin: auto;
         }
         .header {
-            background-color: #5b21b6;
+            background-color: #1f2937;
             color: white;
+            padding: 2rem;
+            border-radius: 1rem;
         }
+        .simulator-section {
+            background: white;
+            padding: 2rem;
+            margin: 2rem 0 0 0;
+            border-radius: 1rem 1rem 0 0;
+            box-shadow: 0 2px 15px -5px rgba(0, 0, 0, 0.1);
+        }
+        .inflation-chart {
+            height: 300px;
+            background: white;
+            padding: 1rem;
+            margin: 2rem 0;
+            border-radius: 1rem;
+            box-shadow: 0 2px 15px -5px rgba(0, 0, 0, 0.1);
+        }
+        /* Real-time Block Explorer iframe style */
+        #block_explorer_iframe {
+            width: 100%;
+            height: 150px;
+            border: 2px solid #e5e7eb;
+            border-top: none;
+            border-radius: 0 0 1rem 1rem;
+            display: block;
+            margin-bottom: 2rem;
+        }
+        /* SCP Consensus Animation Style */
+        .scp-consensus {
+            position: absolute; /* 절대 위치로 테이블 헤더와 분리 */
+            top: 1.5rem;
+            right: 1.5rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            color: white;
+            background: #4f46e5;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.5rem;
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 10;
+        }
+        /* Ledger header container for flex */
+        .ledger-header-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between; /* 제목과 버튼을 양 끝으로 분리 */
+            margin-bottom: 1rem;
+            position: relative; /* SCP Status의 기준점 */
+        }
+        /* Download button style */
+        .download-button {
+            background-color: #10b981;
+            color: white;
+            padding: 0.3rem 0.6rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s;
+        }
+        .download-button:hover {
+            background-color: #059669;
+        }
+        /* Login and Payment Button Styles */
         .pi-button {
             padding: 0.75rem 1.5rem;
             border-radius: 0.5rem;
             font-weight: bold;
-            color: white;
-            transition: background-color 0.2s;
             cursor: pointer;
             border: none;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-bottom: 1rem;
         }
         .login-button {
-            background-color: #fca5a5;
+            background-color: #f7a43b; /* Pi Yellow */
+            color: white;
         }
-        .login-button:hover:not(:disabled) {
-            background-color: #f87171;
+        .login-button:hover {
+            background-color: #e09133;
         }
         .payment-button {
-            background-color: #34d399;
+            background-color: #4CAF50; /* Green */
+            color: white;
         }
-        .payment-button:hover:not(:disabled) {
-            background-color: #10b981;
+        .payment-button:hover {
+            background-color: #45A049;
         }
-        .payment-button:disabled, .login-button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        #block_explorer_iframe {
-            width: 100%;
-            height: 300px;
-            border-radius: 0.75rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            margin-top: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
+        /* Input and Select styling for better visibility */
         input[type="number"], select {
             width: 100%;
             padding: 0.5rem;
+            margin-top: 0.25rem;
             border: 1px solid #d1d5db;
             border-radius: 0.375rem;
-            margin-top: 0.25rem;
         }
-        /* SCP Status는 테이블 컨테이너 우측 상단에 절대 위치로 고정 */
-        .scp-consensus {
-            position: absolute;
-            top: 0;
-            right: 0;
-            padding: 0.5rem 1rem;
-            background-color: #5b21b6;
-            color: white;
-            border-bottom-left-radius: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: bold;
-            transition: opacity 0.5s;
+        /* Style for Public Key cell to ensure readability (글꼴 크기 축소 반영) */
+        .pk-cell {
+            font-family: monospace;
+            font-size: 0.65rem;
         }
-        .ledger-header-container {
-            /* [수정] CSV 버튼과 제목을 분리하여 flex로 정렬 */
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
+        .grid {
+            display: grid;
         }
-        .download-button {
-            background-color: #60a5fa;
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-size: 0.875rem;
-            transition: background-color 0.2s;
-            cursor: pointer;
-            border: none;
+        .grid-cols-2 {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
-        .download-button:hover {
-            background-color: #3b82f6;
-        }
-        #ledger_table {
-            border-collapse: separate;
-            border-spacing: 0;
-            text-align: left;
-            font-size: 0.875rem;
-            width: 100%;
-        }
-        #ledger_table th, #ledger_table td {
-            padding: 0.75rem 0.5rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        #ledger_table tr:last-child td {
-            border-bottom: none;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            border-radius: 0.375rem;
-            font-size: 0.75rem;
-            font-weight: bold;
-        }
-        .status-pending {
-            background-color: #fef3c7;
-            color: #92400e;
-        }
-        .status-success {
-            background-color: #d1fae5;
-            color: #065f46;
-        }
-        .status-failed {
-            background-color: #fee2e2;
-            color: #b91c1c;
-        }
-        .public-tax-display {
-            background-color: #f59e0b; 
-            color: white;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            font-size: 0.875rem;
-            font-weight: bold;
-            text-align: center;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            position: absolute; 
-            top: 0;
-            right: 0;
-            margin-top: 1rem;
-            margin-right: 1rem;
+        .gap-4 {
+            gap: 1rem;
         }
     </style>
 </head>
-<body class="p-6 md:p-10">
-
+<body>
     <div id="message_box" style="z-index: 1000; position: fixed; top: 1rem; left: 50%; transform: translateX(-50%) scale(0); transition: transform 0.3s; padding: 0.75rem 1.5rem; border-radius: 0.5rem; color: white; background-color: #1f2937;">
-        App Status: Initializing...
+        App Status: Ready
     </div>
-
     <div class="container">
         <div class="header rounded-xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between mb-8">
             <div class="flex-1">
-                <p class="text-white text-2xl font-bold mb-2">FOR Pi MAXIMUM TRANSACTION (DEMO MODE)</p>
-                <p class="text-gray-300 text-sm mb-4">Monitor real-time transactions and delegated AI activities</p>
+                <p class="text-white text-lg font-semibold mb-2">FOR Pi MAXIMUM TRANSACTION</p>
+                <p class="text-gray-400 font-bold mb-4">Monitor real-time transactions and delegated AI activities based on your inputs.</p>
             </div>
             <div class="md:ml-8 mt-4 md:mt-0">
-                <p id="sdk_status" class="text-yellow-300 text-sm font-bold text-center">MODE: DEMO (SDK DISABLED)</p>
+                <p class="text-white text-sm font-bold text-center">Run simulation via the buttons below.</p>
             </div>
         </div>
-
-        <div class="simulator-section bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h2 class="text-2xl font-bold mb-4">Transaction Delegation Simulation</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div class="simulator-section">
+            <h2 class="text-2xl font-bold mb-4">Transaction Delegation Simulation (SDK MOCKED)</h2>
+            <div class="grid grid-cols-2 gap-4 mb-4">
                 <button id="login_button" class="pi-button login-button" onclick="piAuthenticate()">
-                    🔐 1. Pi Login (Simulated User: MaxUser)
+                    1. Pi Login (Identify User - MOCKED)
                 </button>
                 <button id="payment_button" class="pi-button payment-button" onclick="piRequestPayment()" disabled>
-                    💰 2. Request Pi Payment (Start SC)
+                    2. Request Pi Payment (Start SC - MOCKED)
                 </button>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label for="piAmount" class="font-medium text-gray-700">Pi Amount:</label>
-                    <input type="number" id="piAmount" step="0.1" value="2.5" placeholder="e.g. 2.5">
+                    <label htmlFor="piAmount">Pi Amount (for SC Selection):</label>
+                    <input type="number" id="piAmount" step="0.0001" value="0.0101" placeholder="e.g. 2.5">
                 </div>
                 <div>
-                    <label for="taskType" class="font-medium text-gray-700">Task Type:</label>
+                    <label htmlFor="taskType">Task Type:</label>
                     <select id="taskType">
                         <option value="Drawing">창작: 그림 (Drawing)</option>
                         <option value="Animation">창작: 애니메이션 (Animation)</option>
                         <option value="VideoEdit">창작: 동영상 편집 (Video Edit)</option>
-                        <option value="Research">데이터: 리서치/분석 (Research)</option>
+                        <option value="Research">데이터: 리서치/분석 (Research/Analysis)</option>
                     </select>
                 </div>
             </div>
         </div>
-
-        <iframe id="block_explorer_iframe" 
-                src="https://blockexplorer.minepi.com/testnet/" 
-                title="Pi Testnet Block Explorer" 
+        <iframe id="block_explorer_iframe"
+                src="https://blockexplorer.minepi.com/testnet/"
+                title="Pi Testnet Block Explorer"
                 frameborder="0"
                 allow="autoplay; encrypted-media"></iframe>
-
-        <div class="chart-section bg-white p-6 rounded-xl shadow-lg mb-8 relative">
-            <h3 class="text-lg font-bold mb-2 text-gray-700">Pi Economy Inflation Index (Simulated)</h3>
-            
-            <div id="public_tax_total" class="public-tax-display">
-                Public Tax Total: 0.00 π
+        <div id="inflation_chart" class="inflation-chart">
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-lg font-bold text-gray-700">Pi Economy Inflation Index (Simulated)</h3>
+                <span id="public_tax_display" class="text-base font-bold text-green-600">Public Tax Pool: 0.0000 Pi</span>
             </div>
-
-            <div id="inflation_chart"></div>
         </div>
-
         <div class="table-container p-6 mb-8 relative bg-white rounded-xl shadow-lg">
             
-            <div id="scp_consensus_status" class="scp-consensus" style="opacity: 0;">SCP Consensus: 0/10001 Nodes</div>
-            
             <div class="ledger-header-container">
-                <h2 class="text-2xl font-bold text-gray-800">TRANSACTION LEDGER</h2>
-                <button class="download-button" onclick="downloadLedger()">📥 Download CSV</button> 
+                <h2 class="text-2xl font-bold text-gray-800">TRANSACTION LEDGER (Off-Chain/Logical)</h2>
+                <button class="download-button" onclick="downloadLedger()">Download CSV</button>
+                <div id="scp_consensus_status" class="scp-consensus" style="opacity: 0;">SCP Consensus: 0/10001 Nodes</div>
             </div>
-            <div class="overflow-x-auto">
-                <table id="ledger_table">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th>ID</th>
-                            <th>Time</th>
-                            <th>Sender</th>
-                            <th>Smart Contract</th>
-                            <th>Pi Amount</th>
-                            <th>Task</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="smart_contract_ledger"></tbody>
-                </table>
-            </div>
+            
+            <table class="min-w-full divide-y divide-gray-200" id="ledger_table">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-2 py-2 text-xs">ID</th>
+                        <th class="px-2 py-2 text-xs">Time</th>
+                        <th class="px-2 py-2 text-xs">Sender</th>
+                        <th class="px-2 py-2 text-xs">Smart Contract</th>
+                        <th class="px-2 py-2 text-xs">Pi Amount</th>
+                        <th class="px-2 py-2 text-xs">Task</th>
+                        <th class="px-2 py-2 text-xs">SC Code</th>
+                    </tr>
+                </thead>
+                <tbody id="smart_contract_ledger">
+                </tbody>
+            </table>
         </div>
     </div>
-
     <script>
-        // 핵심 변수
-        let transactionID = 0;
+        // === Core Variables ===
+        let transactionID = 18; // 마지막 ID 이후부터 시작
         const maxNodes = 10001;
-        let authenticatedUser = null; 
-        let publicTaxTotal = 0.0; // 공공세 합계를 저장할 전역 변수
+        let authenticatedUser = null;
+        // Public Key가 포함된 모의 사용자 이름 설정 (KYC ID + 줄인 Public Key)
+        const MOCK_PUBLIC_KEY_SHORT = 'GDUVQR...QO6';
+        const KYC_ID = '10821';         
+        const mockUsername = KYC_ID + '_' + MOCK_PUBLIC_KEY_SHORT; // 최종 장부 표기
+
+        // --- Public Tax (공공세) & Economy Variables ---
+        const PUBLIC_TAX_RATE = 0.01; // 1% Public Tax (0.01)
+        const FIXED_FEE = 0.01; // 고정 수수료 (0.01 Pi)
+        let publicTaxPool = 0.0; // 누적 공공세 풀 (합계액)
+        // ----------------------------------------------------
         
-        // 메시지 표시 함수
+        // --- Utility Functions ---
         function showMessage(message, isSuccess = true) {
             const messageBox = document.getElementById('message_box');
-            if (!messageBox) return;
-
+            if (!messageBox) return; 
             messageBox.textContent = message;
-            messageBox.style.backgroundColor = isSuccess ? '#10b981' : '#ef4444';
-            messageBox.style.transform = 'translateX(-50%) scale(1)';
+            messageBox.style.opacity = 1;
+            messageBox.style.transform = 'translateX(-50%) scale(1)';                        
             
+            messageBox.classList.remove('bg-green-600', 'bg-red-600', 'bg-gray-800');
+            if (isSuccess) {
+                messageBox.style.backgroundColor = '#4CAF50'; /* Green */
+            } else {
+                messageBox.style.backgroundColor = '#F44336'; /* Red */
+            }                        
             setTimeout(() => {
                 messageBox.style.transform = 'translateX(-50%) scale(0)';
             }, 3000);
         }
-
-        // SCP 합의 애니메이션
+        
+        function updatePublicTaxDisplay() {
+            const taxElement = document.getElementById('public_tax_display');
+            if (taxElement) {
+                taxElement.textContent = `Public Tax Pool: ${publicTaxPool.toFixed(4)} Pi`;
+            }
+        }
+        
         function startSCPAnimation(scType) {
             const scpStatusElement = document.getElementById('scp_consensus_status');
             if (!scpStatusElement) return;
 
             scpStatusElement.style.opacity = 1;
-            const consensusSteps = [31, 314, 3141, maxNodes];
-            let stepIndex = 0;
 
-            showMessage(`AI selected ${scType}. Starting SCP Consensus...`, true);
-            
+            const consensusSteps = [31, 314, 3141, maxNodes]; 
+            let stepIndex = 0;
+            showMessage(`AI selected ${scType}. Starting MOCKED SCP Consensus...`, true); 
+
             const interval = setInterval(() => {
                 const currentCount = consensusSteps[stepIndex];
-                scpStatusElement.textContent = `SCP Consensus: ${currentCount}/${maxNodes} Nodes`;
+                scpStatusElement.textContent = `SCP Consensus: ${currentCount}/${maxNodes} Nodes`;                                
                 stepIndex++;
-                
                 if (stepIndex >= consensusSteps.length) {
                     clearInterval(interval);
-                    scpStatusElement.textContent = `SCP Consensus: ${maxNodes}/${maxNodes} Nodes ✓`;
-                    // 합의 완료 후 잠시 후 사라지게
-                    setTimeout(() => { scpStatusElement.style.opacity = 0; }, 5000); 
+                    scpStatusElement.textContent = `SCP Consensus: 10001/${maxNodes} Nodes (Finalized)`;
                 }
             }, 500);
-        }
-
-        // [MOCK] Pi 인증 (SDK 제거)
+        }                
+        
+        // --- MOCKED Pi SDK Functions ---                
         function piAuthenticate() {
-            alert("[DEMO] Pi Network Authentication (Login) Successful!\n\nUser 'MaxUser' has been identified.");
-            
-            authenticatedUser = 'MaxUser';
-            showMessage(`✓ Authenticated: ${authenticatedUser} (DEMO)`, true);
-            
+            authenticatedUser = mockUsername;
+            showMessage(`Pi ID: ${authenticatedUser} authenticated successfully (MOCKED).`, true);
             document.getElementById('login_button').disabled = true;
             document.getElementById('payment_button').disabled = false;
         }
 
-        // [MOCK] Pi 결제 요청 (SDK 제거)
         function piRequestPayment() {
             if (!authenticatedUser) {
-                showMessage('Please login first!', false);
+                showMessage("Please log in with Pi first.", false);
                 return;
             }
 
             const amount = parseFloat(document.getElementById('piAmount').value);
-            const taskType = document.getElementById('taskType').value;
+            const taskType = document.getElementById('taskType').value; 
 
-            if (isNaN(amount) || amount <= 0) {
-                showMessage('Invalid amount!', false);
+            if (isNaN(amount) || amount <= 0) { 
+                 showMessage("Please enter a valid Pi Amount.", false);
                 return;
             }
 
-            alert(`[DEMO] Pi Payment Request Sent!\nAmount: ${amount} Pi\nMemo: AI Task: ${taskType}\n\n[ACTION] The Pi Browser would normally show the payment pop-up here. Assuming success for demo.`);
-            
-            // 시뮬레이션 실행 
-            runSimulation(amount, taskType, 'DEMO-TX-ID-' + Date.now()); 
-        }
-        
-        // 시뮬레이션 실행 (실패 로직 및 AI3, 공공세 20% 포함)
-        function runSimulation(amount, taskType, paymentId) {
-            const scType = amount <= 2.0 ? '1st SC (Survival)' : '2nd SC (Market)';
-            startSCPAnimation(scType);
+            const minRequiredAmount = 0.0101;
+            if (amount < minRequiredAmount) { 
+                 showMessage(`Pi Amount must be greater than or equal to ${minRequiredAmount.toFixed(4)} Pi (0.0101/n logic).`, false);
+                return;
+            }
 
+            showMessage(`MOCKED Payment request ($${amount.toFixed(4)}$ Pi) sent. Starting SC execution...`, true);
+            runSimulation(taskType);         
+        }                
+
+        // --- Simulation & Core Logic (Called upon successful payment) ---        
+        function runSimulation(taskType) {
+            const piAmountInput = document.getElementById('piAmount').value;
+            const amount = parseFloat(piAmountInput);                        
+            
+            // --- 1. 경제 로직: 작업 비용 (W), 공공세 (P), 고정 수수료 (F) 역산 ---
+            const workCost = (amount - FIXED_FEE) / (1 + PUBLIC_TAX_RATE);
+            const publicTax = workCost * PUBLIC_TAX_RATE;                        
+            publicTaxPool += publicTax;
+            updatePublicTaxDisplay();
+            // ------------------------------------------------------------------
+
+            // 2. Smart Contract Selection (Work Cost 기준으로 1st/2nd SC 선택)            
+            let scType = workCost >= 2.0 ?
+            '2nd SC (Market)' : '1st SC (Survival)';
+
+            startSCPAnimation(scType); 
             const ledger = document.getElementById('smart_contract_ledger');
+            // Main Transaction ID            
             transactionID++;
-            const mainID = `TX-${transactionID}`;
+            const mainID = transactionID;                        
             
-            // 핵심 로직: 공공세 20% 계산 및 반영
-            const taxRate = 0.20;
-            const taxAmount = amount * taxRate;
-            const netAmount = amount - taxAmount;
-            publicTaxTotal += taxAmount; 
-            
-            document.getElementById('public_tax_total').textContent = `Public Tax Total: ${publicTaxTotal.toFixed(4)} π`;
-
-
-            const subAmountBase = (netAmount / 2).toFixed(4); // 공공세 제외된 금액을 2개로 나눔
-            const sender = authenticatedUser || 'System';
+            const subAmountNet = (workCost / 2.0).toFixed(5);
+            const senderName = authenticatedUser ? authenticatedUser : KYC_ID + '_...QO6';
             const currentTime = new Date().toLocaleTimeString();
+            
+            // =========================================================================
+            // ✅ AI 작업 결과 시뮬레이션: 20% 실패 확률 적용 (AI1, AI2 독립적)
+            // Math.random() < 0.2 이면 'FAILURE' (20%)
+            const getAIResult = () => (Math.random() < 0.2) ?
+            'FAILURE' : 'SUCCESS';
+            const subResult1 = getAIResult(); // AI1 결과
+            const subResult2 = getAIResult(); // AI2 결과
+            // =========================================================================
+            
+            // 3. Main Transaction (User calling the SC)
+            let scDisplay = scType;
+            if (scType.includes('1st SC')) {
+                scDisplay = '1st SC (0.0101/n)';
+            }                        
+            
+            let newRowMain = ledger.insertRow();
+            newRowMain.innerHTML = `
+                <td class="px-2 py-2 text-xs font-bold">${mainID}</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs font-bold pk-cell">${senderName} (Main T1)</td>
+                <td class="px-2 py-2 text-xs">${scDisplay}</td> 
+                <td class="px-2 py-2 text-xs font-bold">${amount.toFixed(4)}</td>
+                <td class="px-2 py-2 text-xs">${taskType}</td> 
+                <td class="px-2 py-2 text-xs">CALLED</td>
+            `;
+            // 4. Ledger Entry: Fixed Fee
+            transactionID++;
+            let newRowFee = ledger.insertRow();
+            newRowFee.innerHTML = `
+                <td class="px-2 py-2 text-xs">${transactionID}</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs">SYSTEM (Fee T2)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-700">FIXED FEE (0.01)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-700">-${FIXED_FEE.toFixed(4)}</td>
+                <td class="px-2 py-2 text-xs">Network Op</td>
+                <td class="px-2 py-2 text-xs">COLLECTED</td>
+            `;
+            // 5. Ledger Entry: Public Tax
+            transactionID++;
+            let newRowTax = ledger.insertRow();
+            newRowTax.innerHTML = `
+                <td class="px-2 py-2 text-xs">${transactionID}</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs">SYSTEM (Tax T3)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-600">PUBLIC TAX (1%)</td>
+                <td class="px-2 py-2 text-xs font-bold text-red-600">-${publicTax.toFixed(4)}</td>
+                <td class="px-2 py-2 text-xs">Public Fund</td>
+                <td class="px-2 py-2 text-xs">COLLECTED</td>
+            `;
+            // --- 6. Sub Transaction 1 (AI1 Activity) - AI3 대체 로직 적용 ---
+            const isAi1Failed = subResult1 === 'FAILURE';
+            const ai1Recipient = isAi1Failed ? 'AI3 (Replacement/Success)' : 'AI1 (1/2 Net T4)';
+            const ai1ScCode = isAi1Failed ?
+            'SUCCESS (By AI3)' : subResult1;
+            const ai1RecipientColor = isAi1Failed ? 'text-green-700' : 'text-indigo-600';
+            const ai1ScCodeColor = isAi1Failed ?
+            'text-green-700' : (subResult1 === 'SUCCESS' ? 'text-indigo-600' : 'text-red-600');
+            const ai1AmountColor = 'text-green-600'; // 금액은 성공으로 간주하고 녹색
 
-            // 트랜잭션 상태를 결정하는 함수 (20% 확률로 실패)
-            function getStatus(isFinal = false) {
-                if (Math.random() < 0.20) { 
-                    return {
-                        status: 'FAILED',
-                        badgeClass: 'status-failed',
-                        amountSign: '-',
-                        amountColor: 'text-red-600',
-                        amount: subAmountBase,
-                        isSuccess: false
-                    };
-                }
-                return {
-                    status: isFinal ? 'FINALIZED' : 'SUCCESS',
-                    badgeClass: 'status-success',
-                    amountSign: '+',
-                    amountColor: 'text-green-600',
-                    amount: subAmountBase,
-                    isSuccess: true
-                };
+            let newRow1 = ledger.insertRow();
+            newRow1.innerHTML = `
+                <td class="px-2 py-2 text-xs">${mainID}-01</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai1RecipientColor}">${ai1Recipient}</td>
+                <td class="px-2 py-2 text-xs">${scType} Process</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai1AmountColor}">+${subAmountNet}</td>
+                <td class="px-2 py-2 text-xs">${taskType} Process</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai1ScCodeColor}">${ai1ScCode}</td>
+            `;
+            // --- 7. Sub Transaction 2 (AI2 Activity) - AI2 실패 및 AI3 대체 로직 (분리) ---
+            const isAi2Failed = subResult2 === 'FAILURE';
+            // 7a. AI2 실패 기록 (빨간색) - 실패 시 금액 0.00000으로 명확히 표기
+            if (isAi2Failed) {
+                // AI2는 실패했으나, 이 트랜잭션에서는 금액을 받지 않음 (AI3가 대체하므로)
+                let newRow2Failed = ledger.insertRow();
+                newRow2Failed.innerHTML = `
+                    <td class="px-2 py-2 text-xs">${mainID}-02</td>
+                    <td class="px-2 py-2 text-xs">${currentTime}</td>
+                    <td class="px-2 py-2 text-xs font-bold text-red-600">AI2 (FAILURE REPORT)</td>
+                    <td class="px-2 py-2 text-xs">${scType} Process</td>
+                    <td class="px-2 py-2 text-xs font-bold text-red-600">0.00000</td> 
+                    <td class="px-2 py-2 text-xs">${taskType} Process</td>
+                    <td class="px-2 py-2 text-xs font-bold text-red-700">${subResult2}</td>
+                `;
+                transactionID++; // 대체 트랜잭션 ID 증가
             }
             
-            // Main Transaction (항상 CALLED 성공)
-            const mainRow = `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-2 py-2 font-bold">${mainID}</td>
-                    <td class="px-2 py-2">${currentTime}</td>
-                    <td class="px-2 py-2">${sender}</td>
-                    <td class="px-2 py-2">${scType}</td>
-                    <td class="px-2 py-2 text-right font-bold">${amount.toFixed(4)} π</td>
-                    <td class="px-2 py-2">${taskType}</td>
-                    <td class="px-2 py-2"><span class="status-badge status-success">CALLED</span></td>
-                </tr>
+            // 7b. AI2 또는 AI3 대체 완수 (녹색)
+            // AI2가 실패했거나 (isAi2Failed = true) AI2가 성공했거나 (isAi2Failed = false)
+            const ai2Recipient = isAi2Failed ?
+            'AI3 (Replacement/Success)' : 'AI2 (1/2 Net T4)';
+            const ai2ScCode = isAi2Failed ? 'SUCCESS (By AI3)' : subResult2;
+            const ai2RecipientColor = isAi2Failed ? 'text-green-700' : 'text-indigo-600';
+            const ai2ScCodeColor = isAi2Failed ?
+            'text-green-700' : (subResult2 === 'SUCCESS' ? 'text-indigo-600' : 'text-red-600');
+            const ai2AmountColor = 'text-green-600'; // 성공적인 보상이므로 녹색
+
+            let newRow2Success = ledger.insertRow();
+            newRow2Success.innerHTML = `
+                <td class="px-2 py-2 text-xs">${isAi2Failed ?
+                mainID + '-03' : mainID + '-02'}</td>
+                <td class="px-2 py-2 text-xs">${currentTime}</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai2RecipientColor}">${ai2Recipient}</td>
+                <td class="px-2 py-2 text-xs">${scType} Process</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai2AmountColor}">+${subAmountNet}</td>
+                <td class="px-2 py-2 text-xs">${taskType} Process</td>
+                <td class="px-2 py-2 text-xs font-bold ${ai2RecipientColor}">${ai2ScCode}</td>
             `;
-            
-            // 공공세 트랜잭션
-            const taxRow = `
-                <tr class="hover:bg-gray-50 bg-yellow-50">
-                    <td class="px-2 py-2">${mainID}-TAX</td>
-                    <td class="px-2 py-2">${currentTime}</td>
-                    <td class="px-2 py-2">System</td>
-                    <td class="px-2 py-2 text-orange-600">PUBLIC TAX (20%)</td>
-                    <td class="px-2 py-2 text-right text-orange-600">- ${taxAmount.toFixed(4)} π</td>
-                    <td class="px-2 py-2">Community Fund</td>
-                    <td class="px-2 py-2"><span class="status-badge status-pending">FUNDED</span></td>
-                </tr>
-            `;
-
-
-            // Sub Transaction 1 & 2 상태 결정
-            const status1 = getStatus();
-            const status2 = getStatus();
-
-            const subRow1 = `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-2 py-2">${mainID}-AI1</td>
-                    <td class="px-2 py-2">${currentTime}</td>
-                    <td class="px-2 py-2">AI Processor 1</td>
-                    <td class="px-2 py-2">Task Processing</td>
-                    <td class="px-2 py-2 text-right ${status1.amountColor}">${status1.amountSign}${status1.amount} π</td>
-                    <td class="px-2 py-2"> ${taskType} Execution</td>
-                    <td class="px-2 py-2"><span class="status-badge ${status1.badgeClass}">${status1.status}</span></td>
-                </tr>
-            `;
-
-            const subRow2 = `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-2 py-2">${mainID}-AI2</td>
-                    <td class="px-2 py-2">${currentTime}</td>
-                    <td class="px-2 py-2">AI Processor 2</td>
-                    <td class="px-2 py-2">Consensus Verification</td>
-                    <td class="px-2 py-2 text-right ${status2.amountColor}">${status2.amountSign}${status2.amount} π</td>
-                    <td class="px-2 py-2">SC Finalization</td>
-                    <td class="px-2 py-2"><span class="status-badge ${status2.badgeClass}">${status2.status}</span></td>
-                </tr>
-            `;
-            
-            // AI3 (대체 AI) 로직 (AI1 또는 AI2 실패 시 작동)
-            let ai3Row = '';
-            let finalMessage = '✓ Transaction recorded successfully!';
-            let isOverallSuccess = true;
-
-            if (!status1.isSuccess || !status2.isSuccess) {
-                 // netAmount에서 성공한 AI에게 지급된 금액을 뺀 잔액을 AI3가 보상
-                 const successfulPayments = (status1.isSuccess ? parseFloat(status1.amount) : 0) + (status2.isSuccess ? parseFloat(status2.amount) : 0);
-                 const compensatedAmount = netAmount - successfulPayments; 
-                 
-                 ai3Row = `
-                    <tr class="hover:bg-gray-50 bg-red-100">
-                        <td class="px-2 py-2">${mainID}-AI3</td>
-                        <td class="px-2 py-2">${new Date().toLocaleTimeString()}</td>
-                        <td class="px-2 py-2 font-bold text-red-700">AI Processor 3 (RETRY)</td>
-                        <td class="px-2 py-2">Task Rerun/Finalization</td>
-                        <td class="px-2 py-2 text-right text-red-700">+${compensatedAmount.toFixed(4)} π</td>
-                        <td class="px-2 py-2">COMPENSATED RERUN</td>
-                        <td class="px-2 py-2"><span class="status-badge status-success">COMPLETED</span></td>
-                    </tr>
-                `;
-                finalMessage = '🚨 AI Task FAILED! AI 3 initiated COMPENSATED RERUN.';
-                isOverallSuccess = false;
-            } 
-
-            showMessage(finalMessage, isOverallSuccess);
-
-            // 최종적으로 레저에 기록: 메인 -> 공공세 -> AI1 -> AI2 -> (실패 시) AI3
-            ledger.innerHTML = mainRow + taxRow + subRow1 + subRow2 + ai3Row + ledger.innerHTML;
+            // AI2 성공 시에는 transactionID를 증가시키지 않음 (mainID-02가 마지막이므로)
+            // AI2 실패 시에는 이미 7a에서 증가했으므로 패스.
+            showMessage(`Transaction recorded: Work Cost ($${workCost.toFixed(4)}), Tax ($${publicTax.toFixed(4)}), Fee ($${FIXED_FEE.toFixed(4)}) separated.`, true);
         }
-
-        // CSV 다운로드 (기능 보장 수정 완료)
+        
+        // --- Ledger Download Function (CSV function remains robust) ---
         function downloadLedger() {
             const table = document.getElementById('ledger_table');
-            let csv = [];
+            let csv = [];                        
+            
+            // 1. Get Headers
+            const headerRow = table.querySelector('thead tr');
+            let row = [];
+            headerRow.querySelectorAll('th').forEach(th => {
+                row.push(th.innerText);
+            });
+            csv.push(row.join(','));
 
-            // 1. 헤더 추출
-            const headers = Array.from(table.querySelectorAll('thead th'))
-                .map(th => th.textContent.trim());
-            csv.push(headers.join(','));
-
-            // 2. 데이터 추출
-            const rows = Array.from(table.querySelectorAll('tbody tr'));
-            rows.forEach(row => {
-                // 셀 내부의 텍스트만 추출하고, 쉼표를 포함할 수 있는 문자를 위해 따옴표로 감쌈
-                const cells = Array.from(row.querySelectorAll('td'))
-                    .map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`); // 따옴표 이스케이프 처리
-                csv.push(cells.join(','));
+            // 2. Get Data Rows
+            table.querySelectorAll('#smart_contract_ledger tr').forEach(tr => {
+                row = [];
+                tr.querySelectorAll('td').forEach(td => {
+                    let data = td.innerText.replace(/"/g, '""'); 
+                    row.push(`"${data}"`);
+                });
+                csv.push(row.join(','));
             });
 
+            // 3. Download the CSV
             const csvString = csv.join('\n');
-            
-            // 3. BOM(Byte Order Mark) 추가 및 Blob 생성 (한글 깨짐 방지)
+            // BOM 추가하여 한글 깨짐 방지
             const BOM = "\uFEFF"; 
             const finalCsvData = BOM + csvString;
             
             const blob = new Blob([finalCsvData], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
-            
-            // 4. 다운로드 실행
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `pi_transaction_ledger_${new Date().toISOString().slice(0, 10)}.csv`;
-            
+            const link = document.createElement('a');                        
+
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'pi_governance_ledger.csv');
+            link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url); // 메모리 해제
 
-            showMessage('✓ Ledger downloaded!', true);
+            showMessage("Ledger downloaded successfully!", true);
         }
 
-        // D3 차트 초기화
-        function initChart() {
+        // --- DOM Content Loaded Initialization (D3 Chart and Display Init) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Public Tax Display 초기화
+            updatePublicTaxDisplay();                        
+            
+            // D3.js Inflation Chart Initialization (Unchanged)
             const data = [1.5, 2.3, 1.8, 2.6, 3.0, 2.7, 3.2];
-            const margin = { top: 20, right: 20, bottom: 40, left: 40 };
-            const chartElement = document.getElementById('inflation_chart');
-            
-            if (!chartElement) return;
-            
-            const width = Math.min(chartElement.clientWidth, 800) - margin.left - margin.right;
-            const height = 250 - margin.top - margin.bottom;
+            const margin = {top: 20, right: 20, bottom: 40, left: 40};
+            const chartDiv = document.getElementById('inflation_chart');
+            const containerWidth = chartDiv.clientWidth - 20;
+            const width = (containerWidth > 800 ? 800 : containerWidth) - margin.left - margin.right; 
+            const height = 300 - margin.top - margin.bottom;
 
-            const svg = d3.select('#inflation_chart').append('svg')
-                .attr('width', width + margin.left + margin.right)
+            const svgContainer = d3.select('#inflation_chart').append('div')
+                .style('width', '100%')
+                .style('height', `${height + margin.top + margin.bottom}px`);
+
+            const svg = svgContainer.append('svg')
+               .attr('width', '100%')
                 .attr('height', height + margin.top + margin.bottom);
-
-            const g = svg.append('g')
-                .attr('transform', `translate(${margin.left},${margin.top})`);
-
-            const x = d3.scaleBand()
-                .domain(data.map((_, i) => `Q${i + 1}`))
-                .range([0, width])
-                .padding(0.3);
-
-            const y = d3.scaleLinear()
-                .domain([0, d3.max(data) + 0.5])
-                .range([height, 0]);
-
-            g.append('g')
-                .attr('transform', `translate(0,${height})`)
+            const x = d3.scaleBand().range([0, width]).padding(0.3);
+            const y = d3.scaleLinear().range([height, 0]);
+            const g = svg.append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            x.domain(data.map((d, i) => 'Q' + (i + 1))); 
+            y.domain([0, d3.max(data, d => d) + 0.5]);
+            g.append("g")
+                .attr("transform", "translate(0," + height + ")")
                 .call(d3.axisBottom(x));
-
-            g.append('g')
+            g.append("g")
                 .call(d3.axisLeft(y).ticks(5));
-
-            g.selectAll('.bar')
+            g.selectAll(".bar")
                 .data(data)
-                .enter().append('rect')
-                .attr('class', 'bar')
-                .attr('x', (d, i) => x(`Q${i + 1}`))
-                .attr('y', d => y(d))
-                .attr('width', x.bandwidth())
-                .attr('height', d => height - y(d))
-                .attr('fill', '#6366f1');
-        }
-
-        // 초기 실행
-        window.addEventListener('DOMContentLoaded', () => {
-            initChart();
-            showMessage('DEMO Mode Ready!', true);
-            document.getElementById('login_button').disabled = false;
-        });
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", (d, i) => x('Q' + (i + 1)))
+                .attr("y", d => y(d))
+                .attr("width", x.bandwidth())
+                .attr("height", d => height - y(d))
+                .attr("fill", "#6366f1");
+        });    
     </script>
 </body>
 </html>
